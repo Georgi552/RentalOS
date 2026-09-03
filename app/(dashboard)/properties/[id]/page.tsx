@@ -6,6 +6,16 @@ import { formatMoney } from "@/lib/money";
 import type { Property } from "@/lib/types";
 import { deleteProperty } from "../actions";
 
+type FinancialRow = {
+  month: string;
+  currency: string;
+  rent_expected: string;
+  rent_paid: string;
+  expenses_total: string;
+  expenses_chargeable: string;
+  net: string;
+};
+
 type LeaseRow = {
   id: string;
   start_date: string;
@@ -60,6 +70,22 @@ export default async function PropertyPage({
 
   const leases = (leaseData ?? []) as unknown as LeaseRow[];
   const current = leases.find((lease) => lease.status === "active");
+
+  // Sums are computed in PostgreSQL by property_monthly_financials, never in
+  // JavaScript. See lib/money.ts.
+  const { data: financeData, error: financeError } = await supabase
+    .from("property_monthly_financials")
+    .select(
+      "month, currency, rent_expected::text, rent_paid::text, expenses_total::text, expenses_chargeable::text, net::text",
+    )
+    .eq("property_id", id)
+    .eq("organization_id", organizationId)
+    .order("month", { ascending: false })
+    .limit(12);
+
+  if (financeError) throw new Error(`Could not load financials: ${financeError.message}`);
+
+  const financials = (financeData ?? []) as unknown as FinancialRow[];
 
   return (
     <div>
@@ -123,6 +149,59 @@ export default async function PropertyPage({
         <Row label="Country" value={property.country} />
         <Row label="Notes" value={property.notes} />
       </dl>
+
+      <h2 className="mt-8 text-lg font-semibold tracking-tight">Monthly summary</h2>
+      {financials.length === 0 ? (
+        <p className="mt-2 text-sm text-neutral-500">
+          Nothing recorded yet. Add{" "}
+          <Link href="/rent/new" className="underline">
+            rent
+          </Link>{" "}
+          or an{" "}
+          <Link href="/expenses/new" className="underline">
+            expense
+          </Link>
+          .
+        </p>
+      ) : (
+        <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
+          <table className="w-full text-sm">
+            <thead className="border-b border-neutral-200 text-left text-xs text-neutral-500">
+              <tr>
+                <th className="px-4 py-2 font-medium">Month</th>
+                <th className="px-4 py-2 text-right font-medium">Rent expected</th>
+                <th className="px-4 py-2 text-right font-medium">Rent paid</th>
+                <th className="px-4 py-2 text-right font-medium">Expenses</th>
+                <th className="px-4 py-2 text-right font-medium">Net</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {financials.map((row) => (
+                <tr key={`${row.month}-${row.currency}`}>
+                  <td className="px-4 py-2">{row.month.slice(0, 7)}</td>
+                  <td className="px-4 py-2 text-right">
+                    {formatMoney(row.rent_expected, row.currency)}
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    {formatMoney(row.rent_paid, row.currency)}
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    {formatMoney(row.expenses_total, row.currency)}
+                    {row.expenses_chargeable !== "0.00" && (
+                      <span className="block text-xs text-neutral-500">
+                        {formatMoney(row.expenses_chargeable, row.currency)} to tenant
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 text-right font-medium">
+                    {formatMoney(row.net, row.currency)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {leases.length > 0 && (
         <>

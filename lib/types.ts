@@ -46,3 +46,63 @@ export type Lease = {
 export function tenantName(tenant: { first_name: string; last_name: string }) {
   return `${tenant.first_name} ${tenant.last_name}`.trim();
 }
+
+export type RentStatus = "pending" | "partial" | "paid";
+
+export type RentPayment = {
+  id: string;
+  organization_id: string;
+  lease_id: string;
+  period_month: string;
+  // Read with a ::text cast. See lib/money.ts.
+  expected_amount: string;
+  paid_amount: string;
+  currency: string;
+  payment_date: string | null;
+  status: RentStatus;
+  notes: string | null;
+};
+
+export const EXPENSE_CATEGORIES = [
+  "electricity",
+  "water",
+  "internet",
+  "building_fee",
+  "maintenance",
+  "repair",
+  "other",
+] as const;
+
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+
+export type Expense = {
+  id: string;
+  organization_id: string;
+  property_id: string;
+  category: ExpenseCategory;
+  description: string | null;
+  // Read with a ::text cast. See lib/money.ts.
+  amount: string;
+  currency: string;
+  expense_date: string;
+  tenant_chargeable: boolean;
+  notes: string | null;
+};
+
+export function categoryLabel(category: string) {
+  return category
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+// Compares two exact decimal strings without converting to a JS number.
+export function compareMoney(a: string, b: string) {
+  const pad = (value: string) => {
+    const [whole, frac = ""] = value.split(".");
+    return [whole.padStart(14, "0"), frac.padEnd(2, "0").slice(0, 2)].join("");
+  };
+  const left = pad(a);
+  const right = pad(b);
+  return left < right ? -1 : left > right ? 1 : 0;
+}

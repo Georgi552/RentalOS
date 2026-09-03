@@ -12,6 +12,18 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 - Currency conversion. `EUR` and `BGN` are both allowed, but a statement is
   pinned to one currency by foreign key. No FX rates.
 
+## Known limitations to revisit
+
+- Rent rows are created by hand, one month at a time. Generating the next
+  month's rent for every active lease is an obvious later job.
+- `rent_payments.status` stores only pending / partial / paid, derived from the
+  amounts. "Overdue" is computed at read time from the due date rather than
+  stored, because a stored flag is wrong the day after it is written. If
+  overdue ever needs to be queryable, add a generated column or a view.
+- Deleting a user leaves an orphan `organizations` row (no members, so it is
+  invisible to everyone). Needs a cleanup trigger before account deletion
+  ships.
+
 ## Post-MVP (context doc section 8)
 
 - Email ingestion of invoices
