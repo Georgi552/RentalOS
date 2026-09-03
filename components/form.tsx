@@ -150,10 +150,10 @@ export function SubmitRow({
         disabled={pending}
         className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
       >
-        {pending ? "Saving..." : submitLabel}
+        {pending ? "Записване..." : submitLabel}
       </button>
       <Link href={cancelHref} className="text-sm text-neutral-500 hover:text-neutral-900">
-        Cancel
+        Отказ
       </Link>
     </div>
   );

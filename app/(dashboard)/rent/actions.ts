@@ -38,19 +38,19 @@ function parse(formData: FormData, requireLease: boolean) {
 
   const fieldErrors: Record<string, string> = {};
 
-  if (requireLease && !values.lease_id) fieldErrors.lease_id = "Choose a lease.";
+  if (requireLease && !values.lease_id) fieldErrors.lease_id = "Избери договор.";
 
-  if (!values.period_month) fieldErrors.period_month = "Choose a month.";
-  else if (!isMonth(values.period_month)) fieldErrors.period_month = "Use a month like 2026-08.";
+  if (!values.period_month) fieldErrors.period_month = "Избери месец.";
+  else if (!isMonth(values.period_month)) fieldErrors.period_month = "Използвай формат 2026-08.";
 
-  const expected = parseMoney(values.expected_amount, "Expected rent");
+  const expected = parseMoney(values.expected_amount, "Очакваният наем");
   if (!expected.ok) fieldErrors.expected_amount = expected.error;
 
-  const paid = parseMoney(values.paid_amount, "Paid amount");
+  const paid = parseMoney(values.paid_amount, "Платената сума");
   if (!paid.ok) fieldErrors.paid_amount = paid.error;
 
   if (values.payment_date && !isDate(values.payment_date)) {
-    fieldErrors.payment_date = "Use a valid date.";
+    fieldErrors.payment_date = "Въведи валидна дата.";
   }
 
   if (Object.keys(fieldErrors).length > 0 || !expected.ok || !paid.ok) {
@@ -74,7 +74,7 @@ function parse(formData: FormData, requireLease: boolean) {
 
 function friendlyError(error: { code?: string; message: string }) {
   if (error.code === "23505" && error.message.includes("rent_payments_lease_period_key")) {
-    return "This lease already has a rent record for that month. Edit that one instead.";
+    return "Този договор вече има запис за този месец. Редактирай съществуващия.";
   }
   return error.message;
 }
@@ -98,7 +98,7 @@ export async function createRentPayment(
     .maybeSingle();
 
   if (leaseError) return { error: leaseError.message, values: parsed.values };
-  if (!lease) return { error: "That lease no longer exists.", values: parsed.values };
+  if (!lease) return { error: "Този договор вече не съществува.", values: parsed.values };
 
   const { data, error } = await supabase
     .from("rent_payments")

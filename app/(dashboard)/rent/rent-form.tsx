@@ -40,35 +40,35 @@ export function RentForm({
 
       {leases ? (
         <SelectField
-          label="Lease"
+          label="Договор"
           name="lease_id"
           required
           defaultValue={value("lease_id")}
           error={state.fieldErrors?.lease_id}
           options={leases}
-          placeholder="Choose a lease"
-          hint="Expected rent defaults to the lease rent; you can override it"
+          placeholder="Избери договор"
+          hint="Очакваният наем идва от договора; можеш да го промениш"
         />
       ) : (
         <div>
-          <span className="text-sm font-medium">Lease</span>
+          <span className="text-sm font-medium">Договор</span>
           <p className="mt-1 text-sm text-neutral-600">{existing?.leaseLabel}</p>
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-4">
         <Field
-          label="Month"
+          label="Месец"
           name="period_month"
           type="text"
           required
           defaultValue={value("period_month", existing?.period_month ?? "")}
           error={state.fieldErrors?.period_month}
-          hint="Format: 2026-08"
+          hint="Формат: 2026-08"
           maxLength={7}
         />
         <Field
-          label="Expected rent"
+          label="Очакван наем"
           name="expected_amount"
           required
           defaultValue={value("expected_amount", existing?.expected_amount ?? "")}
@@ -78,14 +78,14 @@ export function RentForm({
 
       <div className="grid grid-cols-2 gap-4">
         <Field
-          label="Paid amount"
+          label="Платена сума"
           name="paid_amount"
           defaultValue={value("paid_amount", existing?.paid_amount ?? "0.00")}
           error={state.fieldErrors?.paid_amount}
-          hint="Leave 0 until the tenant pays"
+          hint="Остави 0, докато наемателят не плати"
         />
         <Field
-          label="Payment date"
+          label="Дата на плащане"
           name="payment_date"
           type="date"
           defaultValue={value("payment_date", existing?.payment_date ?? "")}
@@ -94,7 +94,7 @@ export function RentForm({
       </div>
 
       <TextAreaField
-        label="Notes"
+        label="Бележки"
         name="notes"
         defaultValue={value("notes", existing?.notes ?? "")}
       />

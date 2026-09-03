@@ -18,19 +18,19 @@ export default async function PropertiesPage() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Properties</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Имоти</h1>
         <Link
           href="/properties/new"
           className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
         >
-          Add property
+          Добави имот
         </Link>
       </div>
 
       {properties.length === 0 ? (
         <div className="mt-8 rounded-lg border border-dashed border-neutral-300 px-6 py-12 text-center">
           <p className="text-sm text-neutral-500">
-            No properties yet. Add the first one to get started.
+            Още няма имоти. Добави първия, за да започнеш.
           </p>
         </div>
       ) : (

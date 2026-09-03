@@ -19,22 +19,22 @@ export default async function DashboardLayout({
             </Link>
             <nav className="flex items-center gap-4 text-sm">
               <Link href="/dashboard" className="text-neutral-500 hover:text-neutral-900">
-                Dashboard
+                Табло
               </Link>
               <Link href="/properties" className="text-neutral-500 hover:text-neutral-900">
-                Properties
+                Имоти
               </Link>
               <Link href="/tenants" className="text-neutral-500 hover:text-neutral-900">
-                Tenants
+                Наематели
               </Link>
               <Link href="/leases" className="text-neutral-500 hover:text-neutral-900">
-                Leases
+                Договори
               </Link>
               <Link href="/rent" className="text-neutral-500 hover:text-neutral-900">
-                Rent
+                Наеми
               </Link>
               <Link href="/expenses" className="text-neutral-500 hover:text-neutral-900">
-                Expenses
+                Разходи
               </Link>
             </nav>
           </div>
@@ -46,7 +46,7 @@ export default async function DashboardLayout({
                 type="submit"
                 className="text-sm font-medium text-neutral-900 underline"
               >
-                Sign out
+                Изход
               </button>
             </form>
           </div>

@@ -25,14 +25,14 @@ function parse(formData: FormData) {
 
   const fieldErrors: Record<string, string> = {};
 
-  if (!values.first_name) fieldErrors.first_name = "First name is required.";
-  else if (values.first_name.length > 80) fieldErrors.first_name = "Keep it under 80 characters.";
+  if (!values.first_name) fieldErrors.first_name = "Името е задължително.";
+  else if (values.first_name.length > 80) fieldErrors.first_name = "Да е под 80 символа.";
 
-  if (!values.last_name) fieldErrors.last_name = "Last name is required.";
-  else if (values.last_name.length > 80) fieldErrors.last_name = "Keep it under 80 characters.";
+  if (!values.last_name) fieldErrors.last_name = "Фамилията е задължителна.";
+  else if (values.last_name.length > 80) fieldErrors.last_name = "Да е под 80 символа.";
 
   if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
-    fieldErrors.email = "That does not look like an email address.";
+    fieldErrors.email = "Това не изглежда като имейл адрес.";
   }
 
   if (Object.keys(fieldErrors).length > 0) {
@@ -110,7 +110,7 @@ export async function deleteTenant(id: string) {
     // remove a tenant that still has lease history.
     const message =
       error.code === "23503"
-        ? "This tenant has leases. Delete those leases first."
+        ? "Този наемател има договори. Изтрий договорите първо."
         : error.message;
     redirect(`/tenants/${id}?error=${encodeURIComponent(message)}`);
   }

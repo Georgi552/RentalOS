@@ -27,16 +27,16 @@ export function PropertyForm({
       <FormError message={state.error} />
 
       <Field
-        label="Name"
+        label="Име"
         name="name"
         required
         defaultValue={value("name")}
         error={state.fieldErrors?.name}
-        hint="How you refer to it, for example: Apartment Sofia"
+        hint="Как го наричаш, например: Апартамент Витоша"
         maxLength={120}
       />
       <Field
-        label="Address"
+        label="Адрес"
         name="address"
         required
         defaultValue={value("address")}
@@ -45,21 +45,21 @@ export function PropertyForm({
       />
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="City" name="city" defaultValue={value("city")} />
-        <Field label="Postal code" name="postal_code" defaultValue={value("postal_code")} />
+        <Field label="Град" name="city" defaultValue={value("city")} />
+        <Field label="Пощенски код" name="postal_code" defaultValue={value("postal_code")} />
       </div>
 
       <Field
-        label="Country"
+        label="Държава"
         name="country"
         required
         defaultValue={value("country", "BG")}
         error={state.fieldErrors?.country}
-        hint="2-letter code"
+        hint="Код от 2 букви, например BG"
         maxLength={2}
       />
 
-      <TextAreaField label="Notes" name="notes" defaultValue={value("notes")} />
+      <TextAreaField label="Бележки" name="notes" defaultValue={value("notes")} />
 
       <SubmitRow pending={pending} submitLabel={submitLabel} cancelHref={cancelHref} />
     </form>

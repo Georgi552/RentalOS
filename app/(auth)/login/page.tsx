@@ -2,7 +2,7 @@ import Link from "next/link";
 import { signIn } from "../actions";
 
 const NOTICES: Record<string, string> = {
-  "check-email": "Check your inbox for a confirmation link, then sign in.",
+  "check-email": "Провери имейла си за линк за потвърждение, после влез.",
 };
 
 export default async function LoginPage({
@@ -13,8 +13,8 @@ export default async function LoginPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-      <p className="mt-1 text-sm text-neutral-500">Manage your rentals.</p>
+      <h1 className="text-2xl font-semibold tracking-tight">Вход</h1>
+      <p className="mt-1 text-sm text-neutral-500">Управлявай наемите си.</p>
 
       {noticeText && (
         <p className="mt-6 rounded-md bg-neutral-100 px-3 py-2 text-sm text-neutral-700">
@@ -34,7 +34,7 @@ export default async function LoginPage({
         )}
 
         <label className="block">
-          <span className="text-sm font-medium">Email</span>
+          <span className="text-sm font-medium">Имейл</span>
           <input
             type="email"
             name="email"
@@ -45,7 +45,7 @@ export default async function LoginPage({
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium">Password</span>
+          <span className="text-sm font-medium">Парола</span>
           <input
             type="password"
             name="password"
@@ -59,14 +59,14 @@ export default async function LoginPage({
           type="submit"
           className="w-full rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-700"
         >
-          Sign in
+          Вход
         </button>
       </form>
 
       <p className="mt-6 text-sm text-neutral-500">
-        No account?{" "}
+        Нямаш акаунт?{" "}
         <Link href="/signup" className="font-medium text-neutral-900 underline">
-          Create one
+          Регистрирай се
         </Link>
       </p>
     </div>

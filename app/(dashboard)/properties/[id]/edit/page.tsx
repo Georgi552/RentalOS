@@ -31,12 +31,12 @@ export default async function EditPropertyPage({
       >
         &larr; {property.name}
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Edit property</h1>
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Редакция на имот</h1>
 
       <PropertyForm
         action={updateProperty.bind(null, property.id)}
         property={property}
-        submitLabel="Save changes"
+        submitLabel="Запази промените"
         cancelHref={`/properties/${property.id}`}
       />
     </div>

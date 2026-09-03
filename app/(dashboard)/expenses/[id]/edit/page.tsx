@@ -33,14 +33,14 @@ export default async function EditExpensePage({
   return (
     <div>
       <Link href="/expenses" className="text-sm text-neutral-500 hover:text-neutral-900">
-        &larr; Expenses
+        &larr; Разходи
       </Link>
 
       <div className="mt-2 flex items-start justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Edit expense</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Редакция на разход</h1>
         <ConfirmDeleteButton
           action={deleteExpense.bind(null, expense.id)}
-          confirmMessage="Delete this expense? This cannot be undone."
+          confirmMessage="Да изтрия ли този разход? Действието е необратимо."
         />
       </div>
 
@@ -52,7 +52,7 @@ export default async function EditExpensePage({
         action={updateExpense.bind(null, expense.id)}
         expense={expense}
         properties={properties}
-        submitLabel="Save changes"
+        submitLabel="Запази промените"
         cancelHref="/expenses"
       />
     </div>

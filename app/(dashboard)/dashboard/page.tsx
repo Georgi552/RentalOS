@@ -5,9 +5,9 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Табло</h1>
       <p className="mt-2 text-sm text-neutral-500">
-        Signed in as {user.email}.
+        Влязъл като {user.email}.
       </p>
     </div>
   );

@@ -26,7 +26,7 @@ export async function signIn(formData: FormData) {
   const redirectTo = String(formData.get("redirectTo") ?? "");
 
   if (!email || !password) {
-    backTo("/login", "Enter your email and password.", redirectTo);
+    backTo("/login", "Въведи имейл и парола.", redirectTo);
   }
 
   const supabase = await createClient();
@@ -43,11 +43,11 @@ export async function signUp(formData: FormData) {
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
-    backTo("/signup", "Enter your email and password.");
+    backTo("/signup", "Въведи имейл и парола.");
   }
 
   if (password.length < 8) {
-    backTo("/signup", "Password must be at least 8 characters.");
+    backTo("/signup", "Паролата трябва да е поне 8 символа.");
   }
 
   const supabase = await createClient();

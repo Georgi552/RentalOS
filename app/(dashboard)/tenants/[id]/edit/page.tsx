@@ -29,12 +29,12 @@ export default async function EditTenantPage({ params }: PageProps<"/tenants/[id
       >
         &larr; {tenantName(tenant)}
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Edit tenant</h1>
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Редакция на наемател</h1>
 
       <TenantForm
         action={updateTenant.bind(null, tenant.id)}
         tenant={tenant}
-        submitLabel="Save changes"
+        submitLabel="Запази промените"
         cancelHref={`/tenants/${tenant.id}`}
       />
     </div>

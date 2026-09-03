@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import { Field, FormError, SelectField, SubmitRow, TextAreaField } from "@/components/form";
-import { EXPENSE_CATEGORIES, categoryLabel, type Expense } from "@/lib/types";
+import { EXPENSE_CATEGORY_LABELS, label as tr } from "@/lib/labels";
+import { EXPENSE_CATEGORIES, type Expense } from "@/lib/types";
 import type { ExpenseFormState } from "./actions";
 
 export function ExpenseForm({
@@ -32,39 +33,39 @@ export function ExpenseForm({
       <FormError message={state.error} />
 
       <SelectField
-        label="Property"
+        label="Имот"
         name="property_id"
         required
         defaultValue={value("property_id")}
         error={state.fieldErrors?.property_id}
         options={properties}
-        placeholder="Choose a property"
+        placeholder="Избери имот"
       />
 
       <SelectField
-        label="Category"
+        label="Категория"
         name="category"
         required
         defaultValue={value("category")}
         error={state.fieldErrors?.category}
         options={EXPENSE_CATEGORIES.map((category) => ({
           value: category,
-          label: categoryLabel(category),
+          label: tr(EXPENSE_CATEGORY_LABELS, category),
         }))}
-        placeholder="Choose a category"
+        placeholder="Избери категория"
       />
 
       <div className="grid grid-cols-2 gap-4">
         <Field
-          label="Amount"
+          label="Сума"
           name="amount"
           required
           defaultValue={value("amount")}
           error={state.fieldErrors?.amount}
-          hint="For example 72.40"
+          hint="Например 72.40"
         />
         <SelectField
-          label="Currency"
+          label="Валута"
           name="currency"
           required
           defaultValue={value("currency", "EUR")}
@@ -77,7 +78,7 @@ export function ExpenseForm({
       </div>
 
       <Field
-        label="Date"
+        label="Дата"
         name="expense_date"
         type="date"
         required
@@ -85,7 +86,7 @@ export function ExpenseForm({
         error={state.fieldErrors?.expense_date}
       />
 
-      <Field label="Description" name="description" defaultValue={value("description")} />
+      <Field label="Описание" name="description" defaultValue={value("description")} />
 
       <label className="flex items-start gap-3 rounded-md border border-neutral-200 px-3 py-3">
         <input
@@ -95,14 +96,14 @@ export function ExpenseForm({
           className="mt-0.5"
         />
         <span>
-          <span className="block text-sm font-medium">Charge this to the tenant</span>
+          <span className="block text-sm font-medium">Този разход се плаща от наемателя</span>
           <span className="block text-xs text-neutral-500">
-            Only chargeable expenses are added to the tenant&apos;s monthly statement.
+            Само тези разходи влизат в месечната справка на наемателя.
           </span>
         </span>
       </label>
 
-      <TextAreaField label="Notes" name="notes" defaultValue={value("notes")} />
+      <TextAreaField label="Бележки" name="notes" defaultValue={value("notes")} />
 
       <SubmitRow pending={pending} submitLabel={submitLabel} cancelHref={cancelHref} />
     </form>

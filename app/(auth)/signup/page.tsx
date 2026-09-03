@@ -8,9 +8,9 @@ export default async function SignupPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Регистрация</h1>
       <p className="mt-1 text-sm text-neutral-500">
-        For landlords with 1&ndash;20 properties.
+        За наемодатели с 1&ndash;20 имота.
       </p>
 
       {typeof error === "string" && (
@@ -21,7 +21,7 @@ export default async function SignupPage({
 
       <form action={signUp} className="mt-6 space-y-4">
         <label className="block">
-          <span className="text-sm font-medium">Full name</span>
+          <span className="text-sm font-medium">Име и фамилия</span>
           <input
             type="text"
             name="fullName"
@@ -31,7 +31,7 @@ export default async function SignupPage({
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium">Email</span>
+          <span className="text-sm font-medium">Имейл</span>
           <input
             type="email"
             name="email"
@@ -42,7 +42,7 @@ export default async function SignupPage({
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium">Password</span>
+          <span className="text-sm font-medium">Парола</span>
           <input
             type="password"
             name="password"
@@ -52,7 +52,7 @@ export default async function SignupPage({
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
           />
           <span className="mt-1 block text-xs text-neutral-500">
-            At least 8 characters.
+            Поне 8 символа.
           </span>
         </label>
 
@@ -60,14 +60,14 @@ export default async function SignupPage({
           type="submit"
           className="w-full rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-700"
         >
-          Create account
+          Създай акаунт
         </button>
       </form>
 
       <p className="mt-6 text-sm text-neutral-500">
-        Already have an account?{" "}
+        Вече имаш акаунт?{" "}
         <Link href="/login" className="font-medium text-neutral-900 underline">
-          Sign in
+          Влез
         </Link>
       </p>
     </div>

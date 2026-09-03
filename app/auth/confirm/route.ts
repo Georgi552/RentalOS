@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null;
 
   if (!tokenHash || !type) {
-    redirect("/login?error=Invalid+confirmation+link");
+    redirect("/login?error=" + encodeURIComponent("Невалиден линк за потвърждение"));
   }
 
   const supabase = await createClient();

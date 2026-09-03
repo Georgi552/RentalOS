@@ -29,8 +29,8 @@ export default async function NewRentPage() {
   const options = (data ?? []) as unknown as LeaseOption[];
   const leases: LeaseChoice[] = options.map((lease) => ({
     value: lease.id,
-    label: `${lease.property?.name ?? "Unknown property"} — ${
-      lease.tenant ? tenantName(lease.tenant) : "Unknown tenant"
+    label: `${lease.property?.name ?? "Непознат имот"} — ${
+      lease.tenant ? tenantName(lease.tenant) : "Непознат наемател"
     }`,
     monthlyRent: lease.monthly_rent,
   }));
@@ -38,27 +38,27 @@ export default async function NewRentPage() {
   return (
     <div>
       <Link href="/rent" className="text-sm text-neutral-500 hover:text-neutral-900">
-        &larr; Rent
+        &larr; Наеми
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Record rent</h1>
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Запиши наем</h1>
 
       {leases.length === 0 ? (
         <div className="mt-6 max-w-lg rounded-lg border border-dashed border-neutral-300 px-6 py-8 text-center">
           <p className="text-sm text-neutral-500">
-            You need a lease before you can record rent.
+            Трябва да имаш договор, преди да запишеш наем.
           </p>
           <Link
             href="/leases/new"
             className="mt-4 inline-block rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
           >
-            Add a lease
+            Добави договор
           </Link>
         </div>
       ) : (
         <RentForm
           action={createRentPayment}
           leases={leases}
-          submitLabel="Create rent record"
+          submitLabel="Създай запис"
           cancelHref="/rent"
         />
       )}

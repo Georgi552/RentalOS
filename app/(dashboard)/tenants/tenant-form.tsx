@@ -27,7 +27,7 @@ export function TenantForm({
 
       <div className="grid grid-cols-2 gap-4">
         <Field
-          label="First name"
+          label="Име"
           name="first_name"
           required
           defaultValue={value("first_name")}
@@ -35,7 +35,7 @@ export function TenantForm({
           maxLength={80}
         />
         <Field
-          label="Last name"
+          label="Фамилия"
           name="last_name"
           required
           defaultValue={value("last_name")}
@@ -45,14 +45,14 @@ export function TenantForm({
       </div>
 
       <Field
-        label="Email"
+        label="Имейл"
         name="email"
         type="email"
         defaultValue={value("email")}
         error={state.fieldErrors?.email}
       />
-      <Field label="Phone" name="phone" type="tel" defaultValue={value("phone")} />
-      <TextAreaField label="Notes" name="notes" defaultValue={value("notes")} />
+      <Field label="Телефон" name="phone" type="tel" defaultValue={value("phone")} />
+      <TextAreaField label="Бележки" name="notes" defaultValue={value("notes")} />
 
       <SubmitRow pending={pending} submitLabel={submitLabel} cancelHref={cancelHref} />
     </form>

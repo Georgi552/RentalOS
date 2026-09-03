@@ -38,20 +38,20 @@ function parse(formData: FormData) {
 
   const fieldErrors: Record<string, string> = {};
 
-  if (!values.property_id) fieldErrors.property_id = "Choose a property.";
+  if (!values.property_id) fieldErrors.property_id = "Избери имот.";
 
-  if (!values.category) fieldErrors.category = "Choose a category.";
+  if (!values.category) fieldErrors.category = "Избери категория.";
   else if (!(EXPENSE_CATEGORIES as readonly string[]).includes(values.category)) {
-    fieldErrors.category = "Unsupported category.";
+    fieldErrors.category = "Невалидна категория.";
   }
 
-  const amount = parseMoney(values.amount, "Amount");
+  const amount = parseMoney(values.amount, "Сумата");
   if (!amount.ok) fieldErrors.amount = amount.error;
 
-  if (!values.expense_date) fieldErrors.expense_date = "Date is required.";
-  else if (!isDate(values.expense_date)) fieldErrors.expense_date = "Use a valid date.";
+  if (!values.expense_date) fieldErrors.expense_date = "Датата е задължителна.";
+  else if (!isDate(values.expense_date)) fieldErrors.expense_date = "Въведи валидна дата.";
 
-  if (!CURRENCIES.includes(values.currency)) fieldErrors.currency = "Unsupported currency.";
+  if (!CURRENCIES.includes(values.currency)) fieldErrors.currency = "Невалидна валута.";
 
   if (Object.keys(fieldErrors).length > 0 || !amount.ok) {
     return { ok: false as const, state: { fieldErrors, values } };
@@ -74,7 +74,7 @@ function parse(formData: FormData) {
 }
 
 function friendlyError(error: { code?: string; message: string }) {
-  if (error.code === "23503") return "That property no longer exists.";
+  if (error.code === "23503") return "Този имот вече не съществува.";
   return error.message;
 }
 
@@ -135,7 +135,7 @@ export async function deleteExpense(id: string) {
     // statement_items_expense_fkey (ON DELETE RESTRICT).
     const message =
       error.code === "23503"
-        ? "This expense is already on a tenant statement. Remove it from the statement first."
+        ? "Този разход вече е в справка на наемател. Премахни го от справката първо."
         : error.message;
     redirect(`/expenses/${id}/edit?error=${encodeURIComponent(message)}`);
   }

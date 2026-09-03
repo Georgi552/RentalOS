@@ -3,7 +3,7 @@
 export function ConfirmDeleteButton({
   action,
   confirmMessage,
-  label = "Delete",
+  label = "Изтрий",
 }: {
   action: () => Promise<void>;
   confirmMessage: string;

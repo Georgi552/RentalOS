@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireOrganization } from "@/lib/auth";
+import { LEASE_STATUS_LABELS, label } from "@/lib/labels";
 import { formatMoney } from "@/lib/money";
 
 type LeaseRow = {
@@ -31,19 +32,19 @@ export default async function LeasesPage() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Leases</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Договори</h1>
         <Link
           href="/leases/new"
           className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
         >
-          Add lease
+          Добави договор
         </Link>
       </div>
 
       {leases.length === 0 ? (
         <div className="mt-8 rounded-lg border border-dashed border-neutral-300 px-6 py-12 text-center">
           <p className="text-sm text-neutral-500">
-            No leases yet. A lease connects a tenant to a property for a period.
+            Още няма договори. Договорът свързва наемател с имот за определен период.
           </p>
         </div>
       ) : (
@@ -56,22 +57,24 @@ export default async function LeasesPage() {
               >
                 <span>
                   <span className="block text-sm font-medium">
-                    {lease.property?.name ?? "Unknown property"}
+                    {lease.property?.name ?? "Непознат имот"}
                   </span>
                   <span className="block text-sm text-neutral-500">
                     {lease.tenant
                       ? `${lease.tenant.first_name} ${lease.tenant.last_name}`
-                      : "Unknown tenant"}
-                    {" · from "}
+                      : "Непознат наемател"}
+                    {" · от "}
                     {lease.start_date}
-                    {lease.end_date ? ` to ${lease.end_date}` : ""}
+                    {lease.end_date ? ` до ${lease.end_date}` : ""}
                   </span>
                 </span>
                 <span className="text-right">
                   <span className="block text-sm">
                     {formatMoney(lease.monthly_rent, lease.currency)}
                   </span>
-                  <span className="block text-xs text-neutral-500">{lease.status}</span>
+                  <span className="block text-xs text-neutral-500">
+                    {label(LEASE_STATUS_LABELS, lease.status)}
+                  </span>
                 </span>
               </Link>
             </li>

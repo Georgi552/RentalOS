@@ -4,10 +4,12 @@ import { useActionState } from "react";
 import { Field, FormError, SelectField, SubmitRow, TextAreaField } from "@/components/form";
 import type { Lease } from "@/lib/types";
 import type { LeaseFormState } from "./actions";
+import { BillTermsFields } from "./bill-terms-fields";
 
 export function LeaseForm({
   action,
   lease,
+  billTermValues,
   properties,
   tenants,
   submitLabel,
@@ -15,6 +17,7 @@ export function LeaseForm({
 }: {
   action: (state: LeaseFormState, formData: FormData) => Promise<LeaseFormState>;
   lease?: Lease;
+  billTermValues?: Record<string, string>;
   properties: { value: string; label: string }[];
   tenants: { value: string; label: string }[];
   submitLabel: string;
@@ -30,27 +33,27 @@ export function LeaseForm({
       <FormError message={state.error} />
 
       <SelectField
-        label="Property"
+        label="Имот"
         name="property_id"
         required
         defaultValue={value("property_id")}
         error={state.fieldErrors?.property_id}
         options={properties}
-        placeholder="Choose a property"
+        placeholder="Избери имот"
       />
       <SelectField
-        label="Tenant"
+        label="Наемател"
         name="tenant_id"
         required
         defaultValue={value("tenant_id")}
         error={state.fieldErrors?.tenant_id}
         options={tenants}
-        placeholder="Choose a tenant"
+        placeholder="Избери наемател"
       />
 
       <div className="grid grid-cols-2 gap-4">
         <Field
-          label="Start date"
+          label="Начална дата"
           name="start_date"
           type="date"
           required
@@ -58,26 +61,26 @@ export function LeaseForm({
           error={state.fieldErrors?.start_date}
         />
         <Field
-          label="End date"
+          label="Крайна дата"
           name="end_date"
           type="date"
           defaultValue={value("end_date")}
           error={state.fieldErrors?.end_date}
-          hint="Leave empty if open-ended"
+          hint="Остави празно за безсрочен договор"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <Field
-          label="Monthly rent"
+          label="Месечен наем"
           name="monthly_rent"
           required
           defaultValue={value("monthly_rent")}
           error={state.fieldErrors?.monthly_rent}
-          hint="For example 650 or 650.50"
+          hint="Например 650 или 650.50"
         />
         <SelectField
-          label="Currency"
+          label="Валута"
           name="currency"
           required
           defaultValue={value("currency", "EUR")}
@@ -91,13 +94,13 @@ export function LeaseForm({
 
       <div className="grid grid-cols-2 gap-4">
         <Field
-          label="Deposit"
+          label="Депозит"
           name="deposit"
           defaultValue={value("deposit")}
           error={state.fieldErrors?.deposit}
         />
         <Field
-          label="Rent due day"
+          label="Ден за плащане"
           name="rent_due_day"
           type="number"
           required
@@ -105,25 +108,30 @@ export function LeaseForm({
           max="28"
           defaultValue={value("rent_due_day", "1")}
           error={state.fieldErrors?.rent_due_day}
-          hint="Day of the month, 1 to 28"
+          hint="Ден от месеца, 1 до 28"
         />
       </div>
 
       <SelectField
-        label="Status"
+        label="Статус"
         name="status"
         required
         defaultValue={value("status", "active")}
         error={state.fieldErrors?.status}
         options={[
-          { value: "active", label: "Active" },
-          { value: "draft", label: "Draft" },
-          { value: "ended", label: "Ended" },
+          { value: "active", label: "Активен" },
+          { value: "draft", label: "Чернова" },
+          { value: "ended", label: "Приключен" },
         ]}
-        hint="Only one lease per property can be active"
+        hint="Само един договор за имот може да е активен"
       />
 
-      <TextAreaField label="Notes" name="notes" defaultValue={value("notes")} />
+      <BillTermsFields
+        values={state.values ?? billTermValues ?? {}}
+        errors={state.billTermErrors ?? {}}
+      />
+
+      <TextAreaField label="Бележки" name="notes" defaultValue={value("notes")} />
 
       <SubmitRow pending={pending} submitLabel={submitLabel} cancelHref={cancelHref} />
     </form>

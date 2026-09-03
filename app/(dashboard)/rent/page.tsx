@@ -36,19 +36,19 @@ export default async function RentPage() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Rent</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Наеми</h1>
         <Link
           href="/rent/new"
           className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
         >
-          Record rent
+          Запиши наем
         </Link>
       </div>
 
       {rows.length === 0 ? (
         <div className="mt-8 rounded-lg border border-dashed border-neutral-300 px-6 py-12 text-center">
           <p className="text-sm text-neutral-500">
-            No rent recorded yet. Add a month for one of your leases.
+            Още няма записани наеми. Добави месец за някой от договорите.
           </p>
         </div>
       ) : (
@@ -65,15 +65,15 @@ export default async function RentPage() {
                 >
                   <span>
                     <span className="block text-sm font-medium">
-                      {row.lease?.property?.name ?? "Unknown property"}
+                      {row.lease?.property?.name ?? "Непознат имот"}
                       <span className="text-neutral-400"> · </span>
                       {row.period_month.slice(0, 7)}
                     </span>
                     <span className="block text-sm text-neutral-500">
                       {row.lease?.tenant
                         ? `${row.lease.tenant.first_name} ${row.lease.tenant.last_name}`
-                        : "Unknown tenant"}
-                      {" · due "}
+                        : "Непознат наемател"}
+                      {" · падеж "}
                       {dueDate}
                     </span>
                   </span>

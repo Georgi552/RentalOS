@@ -89,12 +89,6 @@ export type Expense = {
   notes: string | null;
 };
 
-export function categoryLabel(category: string) {
-  return category
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
 
 // Compares two exact decimal strings without converting to a JS number.
 export function compareMoney(a: string, b: string) {
@@ -106,3 +100,13 @@ export function compareMoney(a: string, b: string) {
   const right = pad(b);
   return left < right ? -1 : left > right ? 1 : 0;
 }
+
+export type LeaseBillTerm = {
+  id: string;
+  organization_id: string;
+  lease_id: string;
+  bill_type: string;
+  payer: "landlord" | "tenant";
+  collection: "via_rent" | "direct" | "not_applicable";
+  notes: string | null;
+};

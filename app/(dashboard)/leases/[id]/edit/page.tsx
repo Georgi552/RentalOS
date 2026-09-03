@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireOrganization } from "@/lib/auth";
 import type { Lease } from "@/lib/types";
 import { updateLease } from "../../actions";
+import { billTermValues } from "../../bill-terms";
 import { LeaseForm } from "../../lease-form";
 import { leaseFormOptions } from "../../options";
 
@@ -25,19 +26,28 @@ export default async function EditLeasePage({ params }: PageProps<"/leases/[id]/
   const lease = data as unknown as Lease;
   const { properties, tenants } = await leaseFormOptions(supabase, organizationId);
 
+  const { data: termData, error: termError } = await supabase
+    .from("lease_bill_terms")
+    .select("bill_type, payer, collection")
+    .eq("lease_id", id)
+    .eq("organization_id", organizationId);
+
+  if (termError) throw new Error(`Не мога да заредя условията: ${termError.message}`);
+
   return (
     <div>
       <Link href={`/leases/${lease.id}`} className="text-sm text-neutral-500 hover:text-neutral-900">
-        &larr; Lease
+        &larr; Договор
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Edit lease</h1>
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Редакция на договор</h1>
 
       <LeaseForm
         action={updateLease.bind(null, lease.id)}
         lease={lease}
+        billTermValues={billTermValues(termData ?? [])}
         properties={properties}
         tenants={tenants}
-        submitLabel="Save changes"
+        submitLabel="Запази промените"
         cancelHref={`/leases/${lease.id}`}
       />
     </div>

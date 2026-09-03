@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { requireOrganization } from "@/lib/auth";
+import { LEASE_STATUS_LABELS, label } from "@/lib/labels";
 import { formatMoney } from "@/lib/money";
 import { tenantName, type Tenant } from "@/lib/types";
 import { deleteTenant } from "../actions";
@@ -50,7 +51,7 @@ export default async function TenantPage({
   return (
     <div>
       <Link href="/tenants" className="text-sm text-neutral-500 hover:text-neutral-900">
-        &larr; Tenants
+        &larr; Наематели
       </Link>
 
       <div className="mt-2 flex items-start justify-between">
@@ -60,11 +61,11 @@ export default async function TenantPage({
             href={`/tenants/${tenant.id}/edit`}
             className="text-sm font-medium text-neutral-900 hover:underline"
           >
-            Edit
+            Редактирай
           </Link>
           <ConfirmDeleteButton
             action={deleteTenant.bind(null, tenant.id)}
-            confirmMessage={`Delete ${tenantName(tenant)}? This cannot be undone.`}
+            confirmMessage={`Да изтрия ли ${tenantName(tenant)}? Действието е необратимо.`}
           />
         </div>
       </div>
@@ -75,9 +76,9 @@ export default async function TenantPage({
 
       <dl className="mt-6 divide-y divide-neutral-200 rounded-lg border border-neutral-200 px-4 py-2">
         {[
-          ["Email", tenant.email],
-          ["Phone", tenant.phone],
-          ["Notes", tenant.notes],
+          ["Имейл", tenant.email],
+          ["Телефон", tenant.phone],
+          ["Бележки", tenant.notes],
         ].map(([label, value]) => (
           <div key={label} className="flex gap-4 py-2">
             <dt className="w-32 shrink-0 text-sm text-neutral-500">{label}</dt>
@@ -88,9 +89,9 @@ export default async function TenantPage({
         ))}
       </dl>
 
-      <h2 className="mt-8 text-lg font-semibold tracking-tight">Leases</h2>
+      <h2 className="mt-8 text-lg font-semibold tracking-tight">Договори</h2>
       {leases.length === 0 ? (
-        <p className="mt-2 text-sm text-neutral-500">No leases for this tenant yet.</p>
+        <p className="mt-2 text-sm text-neutral-500">Този наемател още няма договори.</p>
       ) : (
         <ul className="mt-3 divide-y divide-neutral-200 rounded-lg border border-neutral-200">
           {leases.map((lease) => (
@@ -101,18 +102,20 @@ export default async function TenantPage({
               >
                 <span>
                   <span className="block text-sm font-medium">
-                    {lease.property?.name ?? "Unknown property"}
+                    {lease.property?.name ?? "Непознат имот"}
                   </span>
                   <span className="block text-sm text-neutral-500">
-                    from {lease.start_date}
-                    {lease.end_date ? ` to ${lease.end_date}` : ""}
+                    от {lease.start_date}
+                    {lease.end_date ? ` до ${lease.end_date}` : ""}
                   </span>
                 </span>
                 <span className="text-right">
                   <span className="block text-sm">
                     {formatMoney(lease.monthly_rent, lease.currency)}
                   </span>
-                  <span className="block text-xs text-neutral-500">{lease.status}</span>
+                  <span className="block text-xs text-neutral-500">
+                    {label(LEASE_STATUS_LABELS, lease.status)}
+                  </span>
                 </span>
               </Link>
             </li>

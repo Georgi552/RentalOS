@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { requireOrganization } from "@/lib/auth";
+import { LEASE_STATUS_LABELS, label } from "@/lib/labels";
 import { formatMoney } from "@/lib/money";
 import type { Property } from "@/lib/types";
 import { deleteProperty } from "../actions";
@@ -90,7 +91,7 @@ export default async function PropertyPage({
   return (
     <div>
       <Link href="/properties" className="text-sm text-neutral-500 hover:text-neutral-900">
-        &larr; Properties
+        &larr; Имоти
       </Link>
 
       <div className="mt-2 flex items-start justify-between">
@@ -100,7 +101,7 @@ export default async function PropertyPage({
             href={`/properties/${property.id}/edit`}
             className="text-sm font-medium text-neutral-900 hover:underline"
           >
-            Edit
+            Редактирай
           </Link>
           <ConfirmDeleteButton
             action={deleteProperty.bind(null, property.id)}
@@ -114,7 +115,7 @@ export default async function PropertyPage({
       )}
 
       <div className="mt-6 rounded-lg border border-neutral-200 px-4 py-3">
-        <h2 className="text-sm font-medium">Current tenant</h2>
+        <h2 className="text-sm font-medium">Текущ наемател</h2>
         {current ? (
           <p className="mt-1 text-sm text-neutral-600">
             {current.tenant ? (
@@ -122,20 +123,20 @@ export default async function PropertyPage({
                 {current.tenant.first_name} {current.tenant.last_name}
               </Link>
             ) : (
-              "Unknown tenant"
+              "Непознат наемател"
             )}
             {" · "}
-            {formatMoney(current.monthly_rent, current.currency)} / month
+            {formatMoney(current.monthly_rent, current.currency)} / месец
             {" · "}
             <Link href={`/leases/${current.id}`} className="underline">
-              view lease
+              виж договора
             </Link>
           </p>
         ) : (
           <p className="mt-1 text-sm text-neutral-500">
-            No active lease.{" "}
+            Няма активен договор.{" "}
             <Link href="/leases/new" className="underline">
-              Add one
+              Добави
             </Link>
             .
           </p>
@@ -143,23 +144,23 @@ export default async function PropertyPage({
       </div>
 
       <dl className="mt-6 divide-y divide-neutral-200 rounded-lg border border-neutral-200 px-4 py-2">
-        <Row label="Address" value={property.address} />
-        <Row label="City" value={property.city} />
-        <Row label="Postal code" value={property.postal_code} />
-        <Row label="Country" value={property.country} />
-        <Row label="Notes" value={property.notes} />
+        <Row label="Адрес" value={property.address} />
+        <Row label="Град" value={property.city} />
+        <Row label="Пощенски код" value={property.postal_code} />
+        <Row label="Държава" value={property.country} />
+        <Row label="Бележки" value={property.notes} />
       </dl>
 
-      <h2 className="mt-8 text-lg font-semibold tracking-tight">Monthly summary</h2>
+      <h2 className="mt-8 text-lg font-semibold tracking-tight">Месечна справка</h2>
       {financials.length === 0 ? (
         <p className="mt-2 text-sm text-neutral-500">
-          Nothing recorded yet. Add{" "}
+          Още няма записи. Добави{" "}
           <Link href="/rent/new" className="underline">
-            rent
+            наем
           </Link>{" "}
-          or an{" "}
+          или{" "}
           <Link href="/expenses/new" className="underline">
-            expense
+            разход
           </Link>
           .
         </p>
@@ -168,11 +169,11 @@ export default async function PropertyPage({
           <table className="w-full text-sm">
             <thead className="border-b border-neutral-200 text-left text-xs text-neutral-500">
               <tr>
-                <th className="px-4 py-2 font-medium">Month</th>
-                <th className="px-4 py-2 text-right font-medium">Rent expected</th>
-                <th className="px-4 py-2 text-right font-medium">Rent paid</th>
-                <th className="px-4 py-2 text-right font-medium">Expenses</th>
-                <th className="px-4 py-2 text-right font-medium">Net</th>
+                <th className="px-4 py-2 font-medium">Месец</th>
+                <th className="px-4 py-2 text-right font-medium">Очакван наем</th>
+                <th className="px-4 py-2 text-right font-medium">Платен наем</th>
+                <th className="px-4 py-2 text-right font-medium">Разходи</th>
+                <th className="px-4 py-2 text-right font-medium">Нето</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
@@ -189,7 +190,7 @@ export default async function PropertyPage({
                     {formatMoney(row.expenses_total, row.currency)}
                     {row.expenses_chargeable !== "0.00" && (
                       <span className="block text-xs text-neutral-500">
-                        {formatMoney(row.expenses_chargeable, row.currency)} to tenant
+                        {formatMoney(row.expenses_chargeable, row.currency)} към наемателя
                       </span>
                     )}
                   </td>
@@ -205,7 +206,7 @@ export default async function PropertyPage({
 
       {leases.length > 0 && (
         <>
-          <h2 className="mt-8 text-lg font-semibold tracking-tight">Lease history</h2>
+          <h2 className="mt-8 text-lg font-semibold tracking-tight">История на договорите</h2>
           <ul className="mt-3 divide-y divide-neutral-200 rounded-lg border border-neutral-200">
             {leases.map((lease) => (
               <li key={lease.id}>
@@ -217,18 +218,20 @@ export default async function PropertyPage({
                     <span className="block text-sm font-medium">
                       {lease.tenant
                         ? `${lease.tenant.first_name} ${lease.tenant.last_name}`
-                        : "Unknown tenant"}
+                        : "Непознат наемател"}
                     </span>
                     <span className="block text-sm text-neutral-500">
-                      from {lease.start_date}
-                      {lease.end_date ? ` to ${lease.end_date}` : ""}
+                      от {lease.start_date}
+                      {lease.end_date ? ` до ${lease.end_date}` : ""}
                     </span>
                   </span>
                   <span className="text-right">
                     <span className="block text-sm">
                       {formatMoney(lease.monthly_rent, lease.currency)}
                     </span>
-                    <span className="block text-xs text-neutral-500">{lease.status}</span>
+                    <span className="block text-xs text-neutral-500">
+                      {label(LEASE_STATUS_LABELS, lease.status)}
+                    </span>
                   </span>
                 </Link>
               </li>

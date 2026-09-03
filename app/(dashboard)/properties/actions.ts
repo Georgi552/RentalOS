@@ -37,15 +37,15 @@ function parse(formData: FormData):
 
   const fieldErrors: Record<string, string> = {};
 
-  if (!values.name) fieldErrors.name = "Name is required.";
-  else if (values.name.length > 120) fieldErrors.name = "Keep the name under 120 characters.";
+  if (!values.name) fieldErrors.name = "Името е задължително.";
+  else if (values.name.length > 120) fieldErrors.name = "Името да е под 120 символа.";
 
-  if (!values.address) fieldErrors.address = "Address is required.";
-  else if (values.address.length > 300) fieldErrors.address = "Keep the address under 300 characters.";
+  if (!values.address) fieldErrors.address = "Адресът е задължителен.";
+  else if (values.address.length > 300) fieldErrors.address = "Адресът да е под 300 символа.";
 
-  if (!values.country) fieldErrors.country = "Country is required.";
+  if (!values.country) fieldErrors.country = "Държавата е задължителна.";
   else if (!/^[A-Z]{2}$/.test(values.country))
-    fieldErrors.country = "Use a 2-letter country code, for example BG.";
+    fieldErrors.country = "Използвай код от 2 букви, например BG.";
 
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, state: { fieldErrors, values } };
@@ -136,7 +136,7 @@ export async function deleteProperty(id: string) {
   if (count && count > 0) {
     redirect(
       `/properties/${id}?error=${encodeURIComponent(
-        "This property has leases. Delete or end them first.",
+        "Този имот има договори. Изтрий или приключи ги първо.",
       )}`,
     );
   }

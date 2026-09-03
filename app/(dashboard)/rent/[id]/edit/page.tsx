@@ -48,21 +48,21 @@ export default async function EditRentPage({
   const dueDate = rentDueDate(rent.period_month, rent.lease?.rent_due_day ?? 1);
   const overdue = isOverdue(rent.status, dueDate);
 
-  const leaseLabel = `${rent.lease?.property?.name ?? "Unknown property"} — ${
-    rent.lease?.tenant ? tenantName(rent.lease.tenant) : "Unknown tenant"
+  const leaseLabel = `${rent.lease?.property?.name ?? "Непознат имот"} — ${
+    rent.lease?.tenant ? tenantName(rent.lease.tenant) : "Непознат наемател"
   }`;
 
   return (
     <div>
       <Link href="/rent" className="text-sm text-neutral-500 hover:text-neutral-900">
-        &larr; Rent
+        &larr; Наеми
       </Link>
 
       <div className="mt-2 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Rent record</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Запис за наем</h1>
           <p className="mt-1 text-sm text-neutral-500">
-            {formatMoney(rent.paid_amount, rent.currency)} of{" "}
+            {formatMoney(rent.paid_amount, rent.currency)} от{" "}
             {formatMoney(rent.expected_amount, rent.currency)}
             {" · "}
             <span className={overdue ? "text-red-600" : undefined}>
@@ -72,7 +72,7 @@ export default async function EditRentPage({
         </div>
         <ConfirmDeleteButton
           action={deleteRentPayment.bind(null, rent.id)}
-          confirmMessage="Delete this rent record? This cannot be undone."
+          confirmMessage="Да изтрия ли този запис? Действието е необратимо."
         />
       </div>
 
@@ -90,7 +90,7 @@ export default async function EditRentPage({
           payment_date: rent.payment_date,
           notes: rent.notes,
         }}
-        submitLabel="Save changes"
+        submitLabel="Запази промените"
         cancelHref="/rent"
       />
     </div>

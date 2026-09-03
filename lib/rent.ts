@@ -1,3 +1,4 @@
+import { RENT_STATUS_LABELS, label } from "@/lib/labels";
 import { compareMoney } from "@/lib/types";
 import type { RentStatus } from "@/lib/types";
 
@@ -25,6 +26,6 @@ export function isOverdue(
 }
 
 export function rentLabel(status: RentStatus, overdue: boolean) {
-  if (status === "paid") return "paid";
-  return overdue ? `${status} · overdue` : status;
+  const text = label(RENT_STATUS_LABELS, status);
+  return overdue ? `${text} · просрочен` : text;
 }

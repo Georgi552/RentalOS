@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireOrganization } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
-import { categoryLabel } from "@/lib/types";
+import { EXPENSE_CATEGORY_LABELS, label } from "@/lib/labels";
 
 type ExpenseRow = {
   id: string;
@@ -32,18 +32,18 @@ export default async function ExpensesPage() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Expenses</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Разходи</h1>
         <Link
           href="/expenses/new"
           className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
         >
-          Add expense
+          Добави разход
         </Link>
       </div>
 
       {expenses.length === 0 ? (
         <div className="mt-8 rounded-lg border border-dashed border-neutral-300 px-6 py-12 text-center">
-          <p className="text-sm text-neutral-500">No expenses yet.</p>
+          <p className="text-sm text-neutral-500">Още няма разходи.</p>
         </div>
       ) : (
         <ul className="mt-6 divide-y divide-neutral-200 rounded-lg border border-neutral-200">
@@ -55,9 +55,9 @@ export default async function ExpensesPage() {
               >
                 <span>
                   <span className="block text-sm font-medium">
-                    {categoryLabel(expense.category)}
+                    {label(EXPENSE_CATEGORY_LABELS, expense.category)}
                     <span className="text-neutral-400"> · </span>
-                    {expense.property?.name ?? "Unknown property"}
+                    {expense.property?.name ?? "Непознат имот"}
                   </span>
                   <span className="block text-sm text-neutral-500">
                     {expense.expense_date}
@@ -69,7 +69,7 @@ export default async function ExpensesPage() {
                     {formatMoney(expense.amount, expense.currency)}
                   </span>
                   <span className="block text-xs text-neutral-500">
-                    {expense.tenant_chargeable ? "tenant" : "landlord"}
+                    {expense.tenant_chargeable ? "за наемателя" : "за нас"}
                   </span>
                 </span>
               </Link>
