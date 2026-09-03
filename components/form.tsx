@@ -75,6 +75,8 @@ export function SelectField({
   label,
   name,
   defaultValue,
+  value,
+  onChange,
   error,
   required,
   hint,
@@ -84,17 +86,24 @@ export function SelectField({
   label: string;
   name: string;
   defaultValue?: string;
+  // Pass value + onChange when another part of the form reacts to this choice.
+  value?: string;
+  onChange?: (value: string) => void;
   error?: string;
   required?: boolean;
   hint?: string;
   options: { value: string; label: string }[];
   placeholder?: string;
 }) {
+  const controlled = value !== undefined;
+
   return (
     <Label label={label} required={required} hint={hint} error={error}>
       <select
         name={name}
-        defaultValue={defaultValue ?? ""}
+        {...(controlled
+          ? { value, onChange: (e) => onChange?.(e.currentTarget.value) }
+          : { defaultValue: defaultValue ?? "" })}
         className={inputClass}
         aria-invalid={error ? true : undefined}
       >

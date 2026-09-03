@@ -65,3 +65,9 @@ export const RENT_STATUS_LABELS: Record<string, string> = {
 export function label(map: Record<string, string>, value: string) {
   return map[value] ?? value;
 }
+
+export const BILL_STATUS_LABELS: Record<string, string> = {
+  needs_review: "За проверка",
+  confirmed: "Потвърдена",
+  rejected: "Отказана",
+};

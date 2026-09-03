@@ -7,7 +7,7 @@ export async function propertyOptions(supabase: SupabaseClient, organizationId: 
     .eq("organization_id", organizationId)
     .order("name");
 
-  if (error) throw new Error(`Could not load properties: ${error.message}`);
+  if (error) throw new Error(`Не мога да заредя имотите: ${error.message}`);
 
   return (data ?? []).map((property) => ({ value: property.id, label: property.name }));
 }

@@ -258,7 +258,7 @@ create table public.documents (
   updated_at timestamptz not null default now(),
   constraint documents_id_org_key unique (id, organization_id),
   constraint documents_property_fkey foreign key (property_id, organization_id)
-    references public.properties (id, organization_id) on delete set null
+    references public.properties (id, organization_id) on delete set null (property_id)
 );
 
 create index documents_organization_id_idx on public.documents (organization_id);
@@ -304,7 +304,7 @@ create table public.bills (
   constraint bills_property_fkey foreign key (property_id, organization_id)
     references public.properties (id, organization_id) on delete cascade,
   constraint bills_document_fkey foreign key (document_id, organization_id)
-    references public.documents (id, organization_id) on delete set null,
+    references public.documents (id, organization_id) on delete set null (document_id),
   -- A confirmed bill must be assigned to a property (section 28).
   constraint bills_confirmed_needs_property
     check (status <> 'confirmed' or property_id is not null)
@@ -346,7 +346,7 @@ create table public.expenses (
   constraint expenses_property_fkey foreign key (property_id, organization_id)
     references public.properties (id, organization_id) on delete cascade,
   constraint expenses_document_fkey foreign key (document_id, organization_id)
-    references public.documents (id, organization_id) on delete set null
+    references public.documents (id, organization_id) on delete set null (document_id)
 );
 
 create index expenses_organization_id_idx on public.expenses (organization_id);
@@ -375,7 +375,7 @@ create table public.meter_readings (
   constraint meter_readings_property_fkey foreign key (property_id, organization_id)
     references public.properties (id, organization_id) on delete cascade,
   constraint meter_readings_bill_fkey foreign key (bill_id, organization_id)
-    references public.bills (id, organization_id) on delete set null
+    references public.bills (id, organization_id) on delete set null (bill_id)
 );
 
 create index meter_readings_organization_id_idx on public.meter_readings (organization_id);

@@ -33,8 +33,14 @@ export default async function DashboardLayout({
               <Link href="/rent" className="text-neutral-500 hover:text-neutral-900">
                 Наеми
               </Link>
+              <Link href="/bills" className="text-neutral-500 hover:text-neutral-900">
+                Сметки
+              </Link>
               <Link href="/expenses" className="text-neutral-500 hover:text-neutral-900">
                 Разходи
+              </Link>
+              <Link href="/documents" className="text-neutral-500 hover:text-neutral-900">
+                Документи
               </Link>
             </nav>
           </div>

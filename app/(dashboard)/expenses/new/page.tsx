@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireOrganization } from "@/lib/auth";
 import { createExpense } from "../actions";
 import { ExpenseForm } from "../expense-form";
-import { propertyOptions } from "../property-options";
+import { propertyOptions } from "@/lib/property-options";
 
 export default async function NewExpensePage() {
   const { supabase, organizationId } = await requireOrganization();
