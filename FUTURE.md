@@ -14,12 +14,13 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 
 ## Known limitations to revisit
 
-- Rent rows are created by hand, one month at a time. Generating the next
-  month's rent for every active lease is an obvious later job.
-- `rent_payments.status` stores only pending / partial / paid, derived from the
-  amounts. "Overdue" is computed at read time from the due date rather than
-  stored, because a stored flag is wrong the day after it is written. If
-  overdue ever needs to be queryable, add a generated column or a view.
+- The ledger matches charges to the lease currency. A bill raised in another
+  currency is left out rather than added to a different one. Fine while a lease
+  is single-currency; needs FX rates if that changes.
+- The balance carries forward per lease. A tenant with two leases has two
+  separate balances, which is correct but means no single "what does this
+  person owe me" figure yet.
+
 - Deleting a user leaves an orphan `organizations` row (no members, so it is
   invisible to everyone). Needs a cleanup trigger before account deletion
   ships.

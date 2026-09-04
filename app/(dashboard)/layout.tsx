@@ -31,7 +31,7 @@ export default async function DashboardLayout({
                 Договори
               </Link>
               <Link href="/rent" className="text-neutral-500 hover:text-neutral-900">
-                Наеми
+                Плащания
               </Link>
               <Link href="/bills" className="text-neutral-500 hover:text-neutral-900">
                 Сметки

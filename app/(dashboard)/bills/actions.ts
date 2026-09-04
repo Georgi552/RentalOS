@@ -38,7 +38,9 @@ function parse(formData: FormData) {
     amount: text(formData, "amount"),
     currency: text(formData, "currency") || "EUR",
     due_date: text(formData, "due_date"),
-    status: text(formData, "status") || "needs_review",
+    // A bill entered by hand counts straight away; needs_review is for
+    // invoices that arrive by extraction later.
+    status: "confirmed",
     tenant_chargeable: formData.get("tenant_chargeable") ? "on" : "",
     paid_by_landlord: formData.get("paid_by_landlord") ? "on" : "",
     notes: text(formData, "notes"),
@@ -77,10 +79,10 @@ function parse(formData: FormData) {
   if (!CURRENCIES.includes(values.currency)) fieldErrors.currency = "Невалидна валута.";
   if (!STATUSES.includes(values.status)) fieldErrors.status = "Невалиден статус.";
 
-  // Mirrors bills_confirmed_needs_property, so the landlord gets a sentence
-  // instead of a constraint name.
-  if (values.status === "confirmed" && !values.property_id) {
-    fieldErrors.property_id = "Потвърдена сметка трябва да е свързана с имот.";
+  // The bill goes straight onto the tenant's balance, so it has to belong
+  // somewhere. Mirrors bills_confirmed_needs_property.
+  if (!values.property_id) {
+    fieldErrors.property_id = "Избери имот — сметката се начислява веднага.";
   }
 
   // If the tenant pays the provider directly, we have nothing to pass on.

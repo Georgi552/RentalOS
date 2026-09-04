@@ -56,12 +56,6 @@ export const LEASE_STATUS_LABELS: Record<string, string> = {
   ended: "Приключен",
 };
 
-export const RENT_STATUS_LABELS: Record<string, string> = {
-  pending: "Очаква плащане",
-  partial: "Частично платен",
-  paid: "Платен",
-};
-
 export function label(map: Record<string, string>, value: string) {
   return map[value] ?? value;
 }

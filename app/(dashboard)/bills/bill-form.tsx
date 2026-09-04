@@ -88,12 +88,12 @@ export function BillForm({
       <SelectField
         label="Имот"
         name="property_id"
+        required
         value={propertyId}
         onChange={setPropertyId}
         error={state.fieldErrors?.property_id}
         options={properties}
-        placeholder="Още не знам"
-        hint="Може да се остави празно и да се уточни по-късно"
+        placeholder="Избери имот"
       />
 
       <SelectField
@@ -171,27 +171,13 @@ export function BillForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field
-          label="Падеж"
-          name="due_date"
-          type="date"
-          defaultValue={value("due_date")}
-          error={state.fieldErrors?.due_date}
-        />
-        <SelectField
-          label="Статус"
-          name="status"
-          required
-          defaultValue={value("status", "needs_review")}
-          error={state.fieldErrors?.status}
-          options={[
-            { value: "needs_review", label: "За проверка" },
-            { value: "confirmed", label: "Потвърдена" },
-            { value: "rejected", label: "Отказана" },
-          ]}
-        />
-      </div>
+      <Field
+        label="Падеж"
+        name="due_date"
+        type="date"
+        defaultValue={value("due_date")}
+        error={state.fieldErrors?.due_date}
+      />
 
       <div className="space-y-3 rounded-md border border-neutral-200 px-3 py-3">
         <label className="flex items-start gap-3">

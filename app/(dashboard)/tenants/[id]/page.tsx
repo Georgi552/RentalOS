@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { requireOrganization } from "@/lib/auth";
 import { LEASE_STATUS_LABELS, label } from "@/lib/labels";
+import { balanceNote, balanceTone, monthLabel } from "@/lib/ledger";
 import { formatMoney } from "@/lib/money";
 import { tenantName, type Tenant } from "@/lib/types";
 import { deleteTenant } from "../actions";
@@ -48,6 +49,31 @@ export default async function TenantPage({
 
   const leases = (leaseData ?? []) as unknown as LeaseRow[];
 
+  // The newest ledger row per lease carries the balance for that lease.
+  const { data: ledgerData, error: ledgerError } = await supabase
+    .from("lease_monthly_ledger")
+    .select("lease_id, currency, month, balance::text, property:properties(name)")
+    .eq("tenant_id", id)
+    .eq("organization_id", organizationId)
+    .order("month", { ascending: false });
+
+  if (ledgerError) throw new Error(`Не мога да заредя баланса: ${ledgerError.message}`);
+
+  const latest = new Map<
+    string,
+    { lease_id: string; currency: string; month: string; balance: string; property: { name: string } | null }
+  >();
+  for (const row of (ledgerData ?? []) as unknown as {
+    lease_id: string;
+    currency: string;
+    month: string;
+    balance: string;
+    property: { name: string } | null;
+  }[]) {
+    if (!latest.has(row.lease_id)) latest.set(row.lease_id, row);
+  }
+  const balances = [...latest.values()];
+
   return (
     <div>
       <Link href="/tenants" className="text-sm text-neutral-500 hover:text-neutral-900">
@@ -88,6 +114,30 @@ export default async function TenantPage({
           </div>
         ))}
       </dl>
+
+      {balances.length > 0 && (
+        <>
+          <h2 className="mt-8 text-lg font-semibold tracking-tight">Баланс</h2>
+          <ul className="mt-3 divide-y divide-neutral-200 rounded-lg border border-neutral-200">
+            {balances.map((row) => (
+              <li key={row.lease_id} className="flex items-center justify-between px-4 py-3">
+                <span>
+                  <span className="block text-sm font-medium">
+                    {row.property?.name ?? "Непознат имот"}
+                  </span>
+                  <span className="block text-xs text-neutral-500">
+                    към {monthLabel(row.month)}
+                  </span>
+                </span>
+                <span className={`text-right text-sm font-medium ${balanceTone(row.balance)}`}>
+                  {formatMoney(row.balance.replace("-", ""), row.currency)}
+                  <span className="block text-xs font-normal">{balanceNote(row.balance)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <h2 className="mt-8 text-lg font-semibold tracking-tight">Договори</h2>
       {leases.length === 0 ? (

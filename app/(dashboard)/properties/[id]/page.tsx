@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { requireOrganization } from "@/lib/auth";
 import { LEASE_STATUS_LABELS, label } from "@/lib/labels";
+import { balanceNote, balanceTone, monthLabel, type LedgerRow } from "@/lib/ledger";
 import { formatMoney } from "@/lib/money";
 import type { Property } from "@/lib/types";
 import { deleteProperty } from "../actions";
@@ -10,12 +11,10 @@ import { deleteProperty } from "../actions";
 type FinancialRow = {
   month: string;
   currency: string;
-  rent_expected: string;
   rent_paid: string;
   expenses_total: string;
   bills_total: string;
   bills_we_pay: string;
-  tenant_charges: string;
   net: string;
 };
 
@@ -79,7 +78,7 @@ export default async function PropertyPage({
   const { data: financeData, error: financeError } = await supabase
     .from("property_monthly_financials")
     .select(
-      "month, currency, rent_expected::text, rent_paid::text, expenses_total::text, bills_total::text, bills_we_pay::text, tenant_charges::text, net::text",
+      "month, currency, rent_paid::text, expenses_total::text, bills_total::text, bills_we_pay::text, net::text",
     )
     .eq("property_id", id)
     .eq("organization_id", organizationId)
@@ -89,6 +88,20 @@ export default async function PropertyPage({
   if (financeError) throw new Error(`Could not load financials: ${financeError.message}`);
 
   const financials = (financeData ?? []) as unknown as FinancialRow[];
+
+  const { data: ledgerData, error: ledgerError } = await supabase
+    .from("lease_monthly_ledger")
+    .select(
+      "lease_id, property_id, tenant_id, currency, month, payment_id, rent_due::text, bills_due::text, expenses_due::text, charges::text, paid::text, month_delta::text, balance::text",
+    )
+    .eq("property_id", id)
+    .eq("organization_id", organizationId)
+    .order("month", { ascending: false })
+    .limit(12);
+
+  if (ledgerError) throw new Error(`Не мога да заредя баланса: ${ledgerError.message}`);
+
+  const ledger = (ledgerData ?? []) as unknown as LedgerRow[];
 
   return (
     <div>
@@ -153,7 +166,68 @@ export default async function PropertyPage({
         <Row label="Бележки" value={property.notes} />
       </dl>
 
-      <h2 className="mt-8 text-lg font-semibold tracking-tight">Месечна справка</h2>
+      <h2 className="mt-8 text-lg font-semibold tracking-tight">Дължимо от наемателя</h2>
+      {ledger.length === 0 ? (
+        <p className="mt-2 text-sm text-neutral-500">
+          Няма начисления. Създай активен договор и месеците се появяват сами.
+        </p>
+      ) : (
+        <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
+          <table className="w-full text-sm">
+            <thead className="border-b border-neutral-200 text-left text-xs text-neutral-500">
+              <tr>
+                <th className="px-4 py-2 font-medium">Месец</th>
+                <th className="px-4 py-2 text-right font-medium">Наем</th>
+                <th className="px-4 py-2 text-right font-medium">Сметки</th>
+                <th className="px-4 py-2 text-right font-medium">Начислено</th>
+                <th className="px-4 py-2 text-right font-medium">Платено</th>
+                <th className="px-4 py-2 text-right font-medium">Баланс</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {ledger.map((row) => (
+                <tr key={`${row.lease_id}-${row.month}`}>
+                  <td className="px-4 py-2 whitespace-nowrap">{monthLabel(row.month)}</td>
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    {formatMoney(row.rent_due, row.currency)}
+                  </td>
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    {formatMoney(row.bills_due, row.currency)}
+                    {row.expenses_due !== "0.00" && (
+                      <span className="block text-xs text-neutral-500">
+                        + разходи {formatMoney(row.expenses_due, row.currency)}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    {formatMoney(row.charges, row.currency)}
+                  </td>
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    {formatMoney(row.paid, row.currency)}
+                  </td>
+                  <td
+                    className={`px-4 py-2 text-right font-medium whitespace-nowrap ${balanceTone(row.balance)}`}
+                  >
+                    {formatMoney(row.balance.replace("-", ""), row.currency)}
+                    <span className="block text-xs font-normal">{balanceNote(row.balance)}</span>
+                  </td>
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    <Link
+                      href={`/rent/new?lease=${row.lease_id}&month=${monthLabel(row.month)}`}
+                      className="text-sm font-medium text-neutral-900 hover:underline"
+                    >
+                      {row.payment_id ? "Промени" : "Отбележи"}
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2 className="mt-8 text-lg font-semibold tracking-tight">Приходи и разходи</h2>
       {financials.length === 0 ? (
         <p className="mt-2 text-sm text-neutral-500">
           Още няма записи. Добави{" "}
@@ -176,10 +250,9 @@ export default async function PropertyPage({
             <thead className="border-b border-neutral-200 text-left text-xs text-neutral-500">
               <tr>
                 <th className="px-4 py-2 font-medium">Месец</th>
-                <th className="px-4 py-2 text-right font-medium">Наем</th>
+                <th className="px-4 py-2 text-right font-medium">Получен наем</th>
                 <th className="px-4 py-2 text-right font-medium">Сметки</th>
                 <th className="px-4 py-2 text-right font-medium">Разходи</th>
-                <th className="px-4 py-2 text-right font-medium">Към наемателя</th>
                 <th className="px-4 py-2 text-right font-medium">Нето</th>
               </tr>
             </thead>
@@ -189,9 +262,6 @@ export default async function PropertyPage({
                   <td className="px-4 py-2 whitespace-nowrap">{row.month.slice(0, 7)}</td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     {formatMoney(row.rent_paid, row.currency)}
-                    <span className="block text-xs text-neutral-500">
-                      от {formatMoney(row.rent_expected, row.currency)}
-                    </span>
                   </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     {formatMoney(row.bills_total, row.currency)}
@@ -203,9 +273,6 @@ export default async function PropertyPage({
                   </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     {formatMoney(row.expenses_total, row.currency)}
-                  </td>
-                  <td className="px-4 py-2 text-right whitespace-nowrap">
-                    {formatMoney(row.tenant_charges, row.currency)}
                   </td>
                   <td className="px-4 py-2 text-right font-medium whitespace-nowrap">
                     {formatMoney(row.net, row.currency)}
