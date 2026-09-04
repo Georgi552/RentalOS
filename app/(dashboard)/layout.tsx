@@ -42,6 +42,9 @@ export default async function DashboardLayout({
               <Link href="/documents" className="text-neutral-500 hover:text-neutral-900">
                 Документи
               </Link>
+              <Link href="/settings" className="text-neutral-500 hover:text-neutral-900">
+                Настройки
+              </Link>
             </nav>
           </div>
 

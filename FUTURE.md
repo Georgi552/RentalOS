@@ -5,6 +5,9 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 
 ## Deferred from the MVP schema
 
+- `statements` / `statement_items` were dropped in migration 0009. They were
+  designed before the ledger and never written to; `statement_sends` records
+  what was actually mailed, and the amounts stay derived from their sources.
 - `maintenance_requests` as its own entity. For now maintenance and repairs
   are expense categories (context doc section 21).
 - Multi-user organizations. The schema supports members and roles, but there
@@ -24,6 +27,12 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 - Deleting a user leaves an orphan `organizations` row (no members, so it is
   invisible to everyone). Needs a cleanup trigger before account deletion
   ships.
+
+- Auto-send only runs on a deployment with a scheduler. Locally the cron
+  route exists but nothing calls it; on Vercel `vercel.json` triggers it daily.
+- A statement is always for the current month. Sending next month's rent early
+  is not possible, because the ledger has no future months until something is
+  charged in them.
 
 ## Post-MVP (context doc section 8)
 

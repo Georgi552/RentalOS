@@ -110,6 +110,12 @@ export default async function DashboardPage() {
                   <p className={`text-xs ${balanceTone(latest.balance)}`}>
                     {balanceNote(latest.balance)}
                   </p>
+                  <Link
+                    href={`/statements/${latest.lease_id}/${latest.month.slice(0, 7)}`}
+                    className="no-print mt-2 inline-block rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50"
+                  >
+                    Справка за наемателя
+                  </Link>
                 </div>
               </div>
 
