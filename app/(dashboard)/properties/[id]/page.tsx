@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { PrintButton } from "@/components/print-button";
 import { requireOrganization } from "@/lib/auth";
 import { LEASE_STATUS_LABELS, label } from "@/lib/labels";
 import { balanceNote, balanceTone, monthLabel, type LedgerRow } from "@/lib/ledger";
@@ -111,7 +112,7 @@ export default async function PropertyPage({
 
       <div className="mt-2 flex items-start justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">{property.name}</h1>
-        <div className="flex items-center gap-4">
+        <div className="no-print flex items-center gap-4">
           <Link
             href={`/properties/${property.id}/edit`}
             className="text-sm font-medium text-neutral-900 hover:underline"
@@ -166,7 +167,20 @@ export default async function PropertyPage({
         <Row label="Бележки" value={property.notes} />
       </dl>
 
-      <h2 className="mt-8 text-lg font-semibold tracking-tight">Дължимо от наемателя</h2>
+      <div className="mt-8 flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold tracking-tight">Дължимо от наемателя</h2>
+        {ledger.length > 0 && (
+          <span className="no-print flex items-center gap-4">
+            <a
+              href={`/properties/${property.id}/export?table=ledger`}
+              className="text-sm font-medium text-neutral-900 hover:underline"
+            >
+              CSV
+            </a>
+            <PrintButton />
+          </span>
+        )}
+      </div>
       {ledger.length === 0 ? (
         <p className="mt-2 text-sm text-neutral-500">
           Няма начисления. Създай активен договор и месеците се появяват сами.
@@ -182,7 +196,7 @@ export default async function PropertyPage({
                 <th className="px-4 py-2 text-right font-medium">Начислено</th>
                 <th className="px-4 py-2 text-right font-medium">Платено</th>
                 <th className="px-4 py-2 text-right font-medium">Баланс</th>
-                <th className="px-4 py-2" />
+                <th className="no-print px-4 py-2" />
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
@@ -212,7 +226,7 @@ export default async function PropertyPage({
                     {formatMoney(row.balance.replace("-", ""), row.currency)}
                     <span className="block text-xs font-normal">{balanceNote(row.balance)}</span>
                   </td>
-                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                  <td className="no-print px-4 py-2 text-right whitespace-nowrap">
                     <Link
                       href={`/rent/new?lease=${row.lease_id}&month=${monthLabel(row.month)}`}
                       className="text-sm font-medium text-neutral-900 hover:underline"
@@ -227,7 +241,20 @@ export default async function PropertyPage({
         </div>
       )}
 
-      <h2 className="mt-8 text-lg font-semibold tracking-tight">Приходи и разходи</h2>
+      <div className="mt-8 flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold tracking-tight">Приходи и разходи</h2>
+        {financials.length > 0 && (
+          <span className="no-print flex items-center gap-4">
+            <a
+              href={`/properties/${property.id}/export?table=financials`}
+              className="text-sm font-medium text-neutral-900 hover:underline"
+            >
+              CSV
+            </a>
+            <PrintButton />
+          </span>
+        )}
+      </div>
       {financials.length === 0 ? (
         <p className="mt-2 text-sm text-neutral-500">
           Още няма записи. Добави{" "}

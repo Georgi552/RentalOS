@@ -24,3 +24,60 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+@media print {
+  /* Navigation, buttons and links are noise on paper. */
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  main {
+    max-width: none;
+    padding: 0;
+  }
+
+  h1 {
+    font-size: 18pt;
+  }
+
+  h2 {
+    font-size: 13pt;
+    margin-top: 18pt;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+
+  th,
+  td {
+    border: 1px solid #999;
+    padding: 4pt 6pt;
+  }
+
+  /* A table should not be split across pages mid-row. */
+  tr,
+  h2 {
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /* Scroll wrappers must not clip content on paper. */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  a[href]::after {
+    content: "";
+  }
+}

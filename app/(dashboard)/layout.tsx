@@ -11,7 +11,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-neutral-200">
+      <header className="no-print border-b border-neutral-200">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="font-semibold tracking-tight">
