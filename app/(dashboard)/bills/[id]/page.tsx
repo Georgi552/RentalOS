@@ -11,6 +11,7 @@ type BillDetail = {
   bill_type: string;
   provider: string | null;
   issue_date: string | null;
+  charge_month_override: string | null;
   invoice_number: string | null;
   customer_number: string | null;
   period_start: string | null;
@@ -36,7 +37,7 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
   const { data, error } = await supabase
     .from("bills")
     .select(
-      "id, bill_type, provider, issue_date, invoice_number, customer_number, period_start, period_end, amount::text, currency, due_date, status, tenant_chargeable, paid_by_landlord, extraction_confidence::text, match_reason, notes, property:properties(id, name), document:documents(id, filename)",
+      "id, bill_type, provider, issue_date, charge_month_override, invoice_number, customer_number, period_start, period_end, amount::text, currency, due_date, status, tenant_chargeable, paid_by_landlord, extraction_confidence::text, match_reason, notes, property:properties(id, name), document:documents(id, filename)",
     )
     .eq("id", id)
     .eq("organization_id", organizationId)
@@ -52,6 +53,12 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
     ["Статус", label(BILL_STATUS_LABELS, bill.status)],
     ["Доставчик", bill.provider],
     ["Дата на издаване", bill.issue_date],
+    [
+      "Начислена в месец",
+      bill.charge_month_override
+        ? `${bill.charge_month_override.slice(0, 7)} (зададено ръчно)`
+        : null,
+    ],
     ["Номер на фактура", bill.invoice_number],
     ["Клиентски номер", bill.customer_number],
     [

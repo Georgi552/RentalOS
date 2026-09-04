@@ -42,6 +42,7 @@ function parse(formData: FormData) {
     // A bill entered by hand counts straight away; needs_review is for
     // invoices that arrive by extraction later.
     status: "confirmed",
+    charge_month_override: text(formData, "charge_month_override"),
     tenant_chargeable: formData.get("tenant_chargeable") ? "on" : "",
     paid_by_landlord: formData.get("paid_by_landlord") ? "on" : "",
     notes: text(formData, "notes"),
@@ -76,6 +77,10 @@ function parse(formData: FormData) {
     values.period_end < values.period_start
   ) {
     fieldErrors.period_end = "Краят на периода не може да е преди началото.";
+  }
+
+  if (values.charge_month_override && !/^\d{4}-(0[1-9]|1[0-2])$/.test(values.charge_month_override)) {
+    fieldErrors.charge_month_override = "Използвай формат 2026-08.";
   }
 
   if (!CURRENCIES.includes(values.currency)) fieldErrors.currency = "Невалидна валута.";
@@ -119,6 +124,9 @@ function parse(formData: FormData) {
       currency: values.currency,
       due_date: values.due_date || null,
       status: values.status,
+      charge_month_override: values.charge_month_override
+        ? `${values.charge_month_override}-01`
+        : null,
       tenant_chargeable: values.tenant_chargeable === "on",
       paid_by_landlord: values.paid_by_landlord === "on",
       notes: values.notes || null,

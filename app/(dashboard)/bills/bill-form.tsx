@@ -22,6 +22,7 @@ export type BillDefaults = {
   document_id: string;
   provider: string;
   issue_date: string;
+  charge_month_override: string;
   bill_type: string;
   invoice_number: string;
   customer_number: string;
@@ -184,13 +185,23 @@ export function BillForm({
         />
       </div>
 
-      <Field
-        label="Падеж"
-        name="due_date"
-        type="date"
-        defaultValue={value("due_date")}
-        error={state.fieldErrors?.due_date}
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <Field
+          label="Падеж"
+          name="due_date"
+          type="date"
+          defaultValue={value("due_date")}
+          error={state.fieldErrors?.due_date}
+        />
+        <Field
+          label="Начисли в месец"
+          name="charge_month_override"
+          defaultValue={value("charge_month_override")}
+          error={state.fieldErrors?.charge_month_override}
+          hint="Празно = сам преценявам по датата на издаване"
+          maxLength={7}
+        />
+      </div>
 
       <div className="space-y-3 rounded-md border border-neutral-200 px-3 py-3">
         <label className="flex items-start gap-3">

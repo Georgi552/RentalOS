@@ -17,6 +17,10 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 
 ## Known limitations to revisit
 
+- A run of split invoices is detected by period length: at most 20 days and
+  starting within 3 days of the previous period ending. A provider issuing
+  genuine 20-day cycles would be grouped wrongly; the charge month can be set
+  by hand in that case.
 - Only one bill of a kind per property per period is allowed. If a provider
   ever splits one period across two invoices, the second is refused and has to
   be entered with a different period.
