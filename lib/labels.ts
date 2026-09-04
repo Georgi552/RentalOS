@@ -4,18 +4,20 @@
 export const BILL_TYPES = [
   "electricity",
   "water",
-  "internet",
+  "heating",
   "building_fee",
+  "internet",
   "other",
 ] as const;
 
 export type BillType = (typeof BILL_TYPES)[number];
 
 export const BILL_TYPE_LABELS: Record<BillType, string> = {
-  electricity: "Електричество",
+  electricity: "Ток",
   water: "Вода",
+  heating: "Топлофикация",
+  building_fee: "Входна такса",
   internet: "Интернет",
-  building_fee: "Такса сграда / вход",
   other: "Друга сметка",
 };
 
@@ -41,10 +43,11 @@ export const COLLECTION_SHORT: Record<Collection, string> = {
 };
 
 export const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
-  electricity: "Електричество",
+  electricity: "Ток",
   water: "Вода",
+  heating: "Топлофикация",
   internet: "Интернет",
-  building_fee: "Такса сграда / вход",
+  building_fee: "Входна такса",
   maintenance: "Поддръжка",
   repair: "Ремонт",
   other: "Друго",

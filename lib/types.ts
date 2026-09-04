@@ -63,6 +63,7 @@ export type RentPayment = {
 export const EXPENSE_CATEGORIES = [
   "electricity",
   "water",
+  "heating",
   "internet",
   "building_fee",
   "maintenance",

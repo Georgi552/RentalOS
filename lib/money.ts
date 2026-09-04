@@ -41,3 +41,28 @@ export function formatMoney(value: string | null, currency: string): string {
 
   return currency === "BGN" ? `${amount} лв.` : `€${amount}`;
 }
+
+function toCents(value: string): bigint {
+  const negative = value.startsWith("-");
+  const [whole = "0", frac = ""] = value.replace("-", "").split(".");
+  const cents = BigInt(whole || "0") * 100n + BigInt(frac.padEnd(2, "0").slice(0, 2) || "0");
+  return negative ? -cents : cents;
+}
+
+function fromCents(cents: bigint): string {
+  const negative = cents < 0n;
+  const absolute = negative ? -cents : cents;
+  const whole = absolute / 100n;
+  const frac = (absolute % 100n).toString().padStart(2, "0");
+  return `${negative ? "-" : ""}${whole}.${frac}`;
+}
+
+// Adds exact decimal strings through integer cents, so no float ever sees an
+// amount. Only pixel geometry may use Number().
+export function addMoney(...values: (string | null | undefined)[]): string {
+  let total = 0n;
+  for (const value of values) {
+    if (value) total += toCents(value);
+  }
+  return fromCents(total);
+}
