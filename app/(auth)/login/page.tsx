@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { signIn } from "../actions";
 
 const NOTICES: Record<string, string> = {
@@ -9,6 +10,9 @@ export default async function LoginPage({
   searchParams,
 }: PageProps<"/login">) {
   const { error, notice, redirectTo } = await searchParams;
+  // Sanitised here too, so an off-site value never even reaches the DOM.
+  const safeTarget =
+    typeof redirectTo === "string" ? safeRedirect(redirectTo, "") : "";
   const noticeText = typeof notice === "string" ? NOTICES[notice] : undefined;
 
   return (
@@ -29,9 +33,7 @@ export default async function LoginPage({
       )}
 
       <form action={signIn} className="mt-6 space-y-4">
-        {typeof redirectTo === "string" && (
-          <input type="hidden" name="redirectTo" value={redirectTo} />
-        )}
+        {safeTarget && <input type="hidden" name="redirectTo" value={safeTarget} />}
 
         <label className="block">
           <span className="text-sm font-medium">Имейл</span>

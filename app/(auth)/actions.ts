@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
 
 async function siteUrl() {
@@ -16,7 +17,11 @@ async function siteUrl() {
 
 function backTo(path: string, message: string, redirectTo?: string) {
   const params = new URLSearchParams({ error: message });
-  if (redirectTo) params.set("redirectTo", redirectTo);
+  // Only carry the target on if it is local, so a hostile value cannot survive
+  // a failed attempt and be used on the next one.
+  if (redirectTo && safeRedirect(redirectTo, "") !== "") {
+    params.set("redirectTo", redirectTo);
+  }
   redirect(`${path}?${params}`);
 }
 
@@ -34,7 +39,7 @@ export async function signIn(formData: FormData) {
 
   if (error) backTo("/login", error.message, redirectTo);
 
-  redirect(redirectTo || "/dashboard");
+  redirect(safeRedirect(redirectTo));
 }
 
 export async function signUp(formData: FormData) {
