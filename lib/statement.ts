@@ -45,7 +45,7 @@ export async function buildStatement(
   const { data: ledger, error: ledgerError } = await supabase
     .from("lease_monthly_ledger")
     .select(
-      "lease_id, month, currency, rent_due::text, bills_due::text, expenses_due::text, charges::text, paid::text, balance::text",
+      "lease_id, month, currency, rent_due::text, bills_due::text, expenses_due::text, charges::text, due_date, is_due, paid::text, balance::text",
     )
     .eq("organization_id", organizationId)
     .eq("lease_id", leaseId)

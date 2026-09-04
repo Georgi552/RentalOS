@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PropertyChart, PropertyChartTable, type ChartMonth } from "@/components/property-chart";
 import { requireOrganization } from "@/lib/auth";
-import { balanceNote, balanceTone } from "@/lib/ledger";
+import { balanceNote, balanceTone, dueNote } from "@/lib/ledger";
 import { formatMoney } from "@/lib/money";
 import { tenantName } from "@/lib/types";
 
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const { data, error } = await supabase
     .from("lease_monthly_ledger")
     .select(
-      "lease_id, property_id, month, currency, rent_due::text, bills_electricity::text, bills_water::text, bills_heating::text, bills_building_fee::text, bills_internet::text, bills_other::text, expenses_due::text, charges::text, paid::text, balance::text, property:properties(id, name), tenant:tenants(id, first_name, last_name)",
+      "lease_id, property_id, month, currency, rent_due::text, bills_electricity::text, bills_water::text, bills_heating::text, bills_building_fee::text, bills_internet::text, bills_other::text, expenses_due::text, charges::text, charges_due::text, due_date, is_due, paid::text, balance::text, property:properties(id, name), tenant:tenants(id, first_name, last_name)",
     )
     .eq("organization_id", organizationId)
     .gte("month", firstOfMonthsAgo(MONTHS_SHOWN))
@@ -45,7 +45,12 @@ export default async function DashboardPage() {
   }
 
   const cards = [...byLease.values()]
-    .map((months) => ({ months, latest: months[months.length - 1] }))
+    .map((months) => ({
+      months,
+      latest: months[months.length - 1],
+      // The balance belongs to the last month that has actually fallen due.
+      current: [...months].reverse().find((month) => month.is_due) ?? months[months.length - 1],
+    }))
     .sort((a, b) =>
       (a.latest.property?.name ?? "").localeCompare(b.latest.property?.name ?? "", "bg"),
     );
@@ -73,7 +78,7 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-6">
-          {cards.map(({ months, latest }) => (
+          {cards.map(({ months, latest, current }) => (
             <section
               key={latest.lease_id}
               className="property-card rounded-lg border border-neutral-200 bg-white px-5 py-4"
@@ -102,14 +107,20 @@ export default async function DashboardPage() {
 
                 <div className="text-right">
                   <p className="text-xs text-neutral-500">
-                    Текущ баланс · {latest.month.slice(0, 7)}
+                    Текущ баланс · {current.month.slice(0, 7)}
                   </p>
-                  <p className={`text-2xl font-semibold ${balanceTone(latest.balance)}`}>
-                    {formatMoney(latest.balance.replace("-", ""), latest.currency)}
+                  <p className={`text-2xl font-semibold ${balanceTone(current.balance)}`}>
+                    {formatMoney(current.balance.replace("-", ""), current.currency)}
                   </p>
-                  <p className={`text-xs ${balanceTone(latest.balance)}`}>
-                    {balanceNote(latest.balance)}
+                  <p className={`text-xs ${balanceTone(current.balance)}`}>
+                    {balanceNote(current.balance)}
                   </p>
+                  {!latest.is_due && latest.charges !== "0.00" && (
+                    <p className="mt-1 text-xs text-neutral-500">
+                      {formatMoney(latest.charges, latest.currency)}{" "}
+                      {dueNote(latest)}
+                    </p>
+                  )}
                   <Link
                     href={`/statements/${latest.lease_id}/${latest.month.slice(0, 7)}`}
                     className="no-print mt-2 inline-block rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50"

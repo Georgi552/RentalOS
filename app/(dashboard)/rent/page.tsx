@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireOrganization } from "@/lib/auth";
-import { balanceNote, balanceTone, monthLabel, type LedgerRow } from "@/lib/ledger";
+import { balanceNote, balanceTone, dueNote, monthLabel, type LedgerRow } from "@/lib/ledger";
 import { formatMoney } from "@/lib/money";
 import { tenantName } from "@/lib/types";
 
@@ -16,7 +16,7 @@ export default async function RentPage({ searchParams }: PageProps<"/rent">) {
   const { data, error } = await supabase
     .from("lease_monthly_ledger")
     .select(
-      "lease_id, property_id, tenant_id, currency, month, payment_id, rent_due::text, bills_due::text, expenses_due::text, charges::text, paid::text, balance::text, property:properties(name), tenant:tenants(first_name, last_name)",
+      "lease_id, property_id, tenant_id, currency, month, payment_id, rent_due::text, bills_due::text, expenses_due::text, charges::text, charges_due::text, due_date, is_due, paid::text, balance::text, property:properties(name), tenant:tenants(first_name, last_name)",
     )
     .eq("organization_id", organizationId)
     .order("month", { ascending: false })
@@ -68,7 +68,12 @@ export default async function RentPage({ searchParams }: PageProps<"/rent">) {
             <tbody className="divide-y divide-neutral-200">
               {rows.map((row) => (
                 <tr key={`${row.lease_id}-${row.month}`}>
-                  <td className="px-4 py-2 whitespace-nowrap">{monthLabel(row.month)}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    {monthLabel(row.month)}
+                    {dueNote(row) && (
+                      <span className="block text-xs text-neutral-400">{dueNote(row)}</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2">
                     <span className="block">{row.property?.name ?? "Непознат имот"}</span>
                     <span className="block text-xs text-neutral-500">

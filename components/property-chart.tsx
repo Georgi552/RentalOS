@@ -19,6 +19,9 @@ export type ChartMonth = {
   bills_other: string;
   expenses_due: string;
   charges: string;
+  charges_due: string;
+  due_date: string;
+  is_due: boolean;
   paid: string;
   balance: string;
 };
@@ -98,6 +101,7 @@ function chargesTooltip(month: ChartMonth) {
   }
 
   lines.push(`Общо: ${formatMoney(month.charges, month.currency)}`);
+  if (!month.is_due) lines.push(`Още не е дължимо · падеж ${month.due_date}`);
   return lines.join("\n");
 }
 
@@ -163,12 +167,16 @@ export function PropertyChart({ months }: { months: ChartMonth[] }) {
                 key: "charges" as const,
                 x: groupX,
                 color: CHARGES_COLOR,
+                // A month that has not fallen due is drawn faint: the amount is
+                // real but it is not owed yet.
+                opacity: month.is_due ? 1 : 0.45,
                 tooltip: chargesTooltip(month),
               },
               {
                 key: "paid" as const,
                 x: groupX + BAR_W + BAR_GAP,
                 color: PAID_COLOR,
+                opacity: 1,
                 tooltip: `${month.month.slice(0, 7)} · платено: ${formatMoney(
                   month.paid,
                   currency,
@@ -196,6 +204,7 @@ export function PropertyChart({ months }: { months: ChartMonth[] }) {
                         <path
                           d={barPath(bar.x, TOP_PAD + PLOT_H - barHeight, BAR_W, barHeight)}
                           fill={bar.color}
+                          opacity={bar.opacity}
                           pointerEvents="none"
                         />
                       )}

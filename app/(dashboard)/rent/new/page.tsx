@@ -49,7 +49,7 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
     const { data: ledger } = await supabase
       .from("lease_monthly_ledger")
       .select(
-        "month, currency, rent_due::text, bills_due::text, expenses_due::text, charges::text, paid::text, balance::text",
+        "month, currency, rent_due::text, bills_due::text, expenses_due::text, charges::text, charges_due::text, due_date, is_due, paid::text, balance::text",
       )
       .eq("organization_id", organizationId)
       .eq("lease_id", leaseId)

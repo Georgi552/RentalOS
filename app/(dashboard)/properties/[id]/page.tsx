@@ -4,7 +4,7 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { PrintButton } from "@/components/print-button";
 import { requireOrganization } from "@/lib/auth";
 import { LEASE_STATUS_LABELS, label } from "@/lib/labels";
-import { balanceNote, balanceTone, monthLabel, type LedgerRow } from "@/lib/ledger";
+import { balanceNote, balanceTone, dueNote, monthLabel, type LedgerRow } from "@/lib/ledger";
 import { formatMoney } from "@/lib/money";
 import type { Property } from "@/lib/types";
 import { deleteProperty } from "../actions";
@@ -93,7 +93,7 @@ export default async function PropertyPage({
   const { data: ledgerData, error: ledgerError } = await supabase
     .from("lease_monthly_ledger")
     .select(
-      "lease_id, property_id, tenant_id, currency, month, payment_id, rent_due::text, bills_due::text, expenses_due::text, charges::text, paid::text, month_delta::text, balance::text",
+      "lease_id, property_id, tenant_id, currency, month, payment_id, rent_due::text, bills_due::text, expenses_due::text, charges::text, charges_due::text, due_date, is_due, paid::text, month_delta::text, balance::text",
     )
     .eq("property_id", id)
     .eq("organization_id", organizationId)
@@ -202,7 +202,12 @@ export default async function PropertyPage({
             <tbody className="divide-y divide-neutral-200">
               {ledger.map((row) => (
                 <tr key={`${row.lease_id}-${row.month}`}>
-                  <td className="px-4 py-2 whitespace-nowrap">{monthLabel(row.month)}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    {monthLabel(row.month)}
+                    {dueNote(row) && (
+                      <span className="block text-xs text-neutral-400">{dueNote(row)}</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     {formatMoney(row.rent_due, row.currency)}
                   </td>

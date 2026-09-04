@@ -12,6 +12,10 @@ export type LedgerRow = {
   bills_due: string;
   expenses_due: string;
   charges: string;
+  // The part of charges that has fallen due. Zero before the due date.
+  charges_due: string;
+  due_date: string;
+  is_due: boolean;
   paid: string;
   month_delta: string;
   // Negative means the tenant still owes; positive is credit carried forward.
@@ -36,6 +40,11 @@ export function balanceNote(balance: string) {
   if (isDebt(balance)) return "дължи";
   if (isCredit(balance)) return "надплатил";
   return "изчистен";
+}
+
+// A month whose due date has not arrived is not a debt; it is what is coming.
+export function dueNote(row: { is_due: boolean; due_date: string }) {
+  return row.is_due ? null : `предстои ${row.due_date}`;
 }
 
 export function monthLabel(month: string) {
