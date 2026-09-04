@@ -70,6 +70,14 @@ export default async function DocumentsPage({
                 </span>
               </span>
               <span className="ml-4 flex shrink-0 items-center gap-4">
+                {document.mime_type === "application/pdf" && (
+                  <Link
+                    href={`/bills/new?document=${document.id}`}
+                    className="text-sm font-medium text-neutral-900 hover:underline"
+                  >
+                    Създай сметка
+                  </Link>
+                )}
                 <a
                   href={`/documents/${document.id}/download`}
                   target="_blank"

@@ -21,6 +21,7 @@ export type BillDefaults = {
   property_id: string;
   document_id: string;
   provider: string;
+  issue_date: string;
   bill_type: string;
   invoice_number: string;
   customer_number: string;
@@ -108,7 +109,19 @@ export function BillForm({
       />
 
       <div className="grid grid-cols-2 gap-4">
+        <Field
+          label="Дата на издаване"
+          name="issue_date"
+          type="date"
+          required
+          defaultValue={value("issue_date")}
+          error={state.fieldErrors?.issue_date}
+          hint="Решава в кой месец влиза сметката"
+        />
         <Field label="Доставчик" name="provider" defaultValue={value("provider")} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <SelectField
           label="Документ"
           name="document_id"

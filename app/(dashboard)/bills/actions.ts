@@ -30,6 +30,7 @@ function parse(formData: FormData) {
     property_id: text(formData, "property_id"),
     document_id: text(formData, "document_id"),
     provider: text(formData, "provider"),
+    issue_date: text(formData, "issue_date"),
     bill_type: text(formData, "bill_type"),
     invoice_number: text(formData, "invoice_number"),
     customer_number: text(formData, "customer_number"),
@@ -57,6 +58,7 @@ function parse(formData: FormData) {
   if (!amount.ok) fieldErrors.amount = amount.error;
 
   for (const [key, dateLabel] of [
+    ["issue_date", "Датата на издаване"],
     ["period_start", "Началото на периода"],
     ["period_end", "Краят на периода"],
     ["due_date", "Падежът"],
@@ -85,6 +87,12 @@ function parse(formData: FormData) {
     fieldErrors.property_id = "Избери имот — сметката се начислява веднага.";
   }
 
+  // The charge month is derived from this date, so a bill without one would
+  // land in whatever month it happened to be entered.
+  if (!values.issue_date) {
+    fieldErrors.issue_date = "Датата на издаване решава в кой месец влиза сметката.";
+  }
+
   // If the tenant pays the provider directly, we have nothing to pass on.
   if (values.tenant_chargeable === "on" && values.paid_by_landlord !== "on") {
     fieldErrors.tenant_chargeable =
@@ -101,6 +109,7 @@ function parse(formData: FormData) {
       property_id: values.property_id || null,
       document_id: values.document_id || null,
       provider: values.provider || null,
+      issue_date: values.issue_date || null,
       bill_type: values.bill_type,
       invoice_number: values.invoice_number || null,
       customer_number: values.customer_number || null,

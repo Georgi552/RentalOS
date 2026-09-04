@@ -81,7 +81,10 @@ export function UploadForm({
       return;
     }
 
-    router.push("/documents");
+    // A PDF is almost always an invoice, so go straight to reading it.
+    router.push(
+      file.type === "application/pdf" ? `/bills/new?document=${documentId}` : "/documents",
+    );
   }
 
   return (
@@ -102,7 +105,7 @@ export function UploadForm({
           className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-neutral-900 file:px-3 file:py-1 file:text-white"
         />
         <span className="mt-1 block text-xs text-neutral-500">
-          PDF или снимка, до 10 MB.
+          PDF или снимка, до 10 MB. PDF фактура се прочита автоматично.
         </span>
       </label>
 
@@ -127,7 +130,7 @@ export function UploadForm({
           disabled={busy}
           className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
         >
-          {busy ? "Качване..." : "Качи документ"}
+          {busy ? "Качване..." : "Качи и прочети"}
         </button>
         <Link href="/documents" className="text-sm text-neutral-500 hover:text-neutral-900">
           Отказ

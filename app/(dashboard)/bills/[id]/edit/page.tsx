@@ -14,7 +14,7 @@ export default async function EditBillPage({ params }: PageProps<"/bills/[id]/ed
   const { data, error } = await supabase
     .from("bills")
     .select(
-      "id, property_id, document_id, provider, bill_type, invoice_number, customer_number, period_start, period_end, amount::text, currency, due_date, status, tenant_chargeable, paid_by_landlord, notes",
+      "id, property_id, document_id, provider, issue_date, bill_type, invoice_number, customer_number, period_start, period_end, amount::text, currency, due_date, status, tenant_chargeable, paid_by_landlord, notes",
     )
     .eq("id", id)
     .eq("organization_id", organizationId)
@@ -44,6 +44,7 @@ export default async function EditBillPage({ params }: PageProps<"/bills/[id]/ed
           property_id: (bill.property_id as string) ?? "",
           document_id: (bill.document_id as string) ?? "",
           provider: (bill.provider as string) ?? "",
+          issue_date: (bill.issue_date as string) ?? "",
           bill_type: (bill.bill_type as string) ?? "",
           invoice_number: (bill.invoice_number as string) ?? "",
           customer_number: (bill.customer_number as string) ?? "",
