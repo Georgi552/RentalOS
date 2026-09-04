@@ -76,7 +76,7 @@ export default async function DashboardPage() {
           {cards.map(({ months, latest }) => (
             <section
               key={latest.lease_id}
-              className="rounded-lg border border-neutral-200 bg-white px-5 py-4"
+              className="property-card rounded-lg border border-neutral-200 bg-white px-5 py-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
 
               <div className="mt-4">
                 <PropertyChart months={months} />
-                <PropertyChartTable months={months} />
+                <PropertyChartTable months={months} propertyId={latest.property_id} />
               </div>
             </section>
           ))}

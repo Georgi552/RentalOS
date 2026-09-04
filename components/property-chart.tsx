@@ -1,25 +1,11 @@
+import { PrintButton } from "@/components/print-button";
 import { addMoney, formatMoney } from "@/lib/money";
 
-// Categorical slots 1-6 of the validated order (blue, orange, aqua, yellow,
-// magenta, green). The order is the colourblind-safety mechanism, so series
-// are assigned in slot order rather than by taste.
-// Validated: worst adjacent CVD delta-E 9.1, normal-vision 19.6.
-// Categorical slots of the validated order. The order is the colourblind-safety
-// mechanism, so series take slots rather than hand-picked colours.
-// Validated per panel: rent/paid worst adjacent CVD delta-E 26.5; utilities 9.1.
-const MONEY_SERIES = [
-  { key: "rent_due", label: "Наем", color: "#2a78d6" },
-  { key: "paid", label: "Платено", color: "#008300" },
-] as const;
-
-const BILL_SERIES = [
-  { key: "bills_electricity", label: "Ток", color: "#eb6834" },
-  { key: "bills_water", label: "Вода", color: "#1baf7a" },
-  { key: "bills_heating", label: "Топлофикация", color: "#eda100" },
-  { key: "bills_building_fee", label: "Входна такса", color: "#e87ba4" },
-] as const;
-
-const ALL_SERIES = [...MONEY_SERIES, ...BILL_SERIES];
+// Categorical slots 1 and 6 of the validated order (blue, green).
+// Validated on this pair: CVD delta-E 26.5, normal-vision 29.0, both above 3:1
+// on a white surface.
+const CHARGES_COLOR = "#2a78d6";
+const PAID_COLOR = "#008300";
 
 export type ChartMonth = {
   month: string;
@@ -37,14 +23,25 @@ export type ChartMonth = {
   balance: string;
 };
 
+// The parts behind a month's charge, in the order they are explained on hover.
+const PARTS = [
+  { key: "rent_due", label: "Наем" },
+  { key: "bills_electricity", label: "Ток" },
+  { key: "bills_water", label: "Вода" },
+  { key: "bills_heating", label: "Топлофикация" },
+  { key: "bills_building_fee", label: "Входна такса" },
+  { key: "bills_internet", label: "Интернет" },
+  { key: "bills_other", label: "Друга сметка" },
+  { key: "expenses_due", label: "Разходи" },
+] as const;
+
 const AXIS_W = 52;
-const GROUP_W = 58;
-const GROUP_GAP = 30;
+const BAR_W = 24;
 const BAR_GAP = 2; // surface gap between adjacent bars
-const TOP_PAD = 26; // room for the panel title above the plot
-const RENT_H = 118;
-const BILL_H = 84;
-const PANEL_GAP = 36;
+const GROUP_W = BAR_W * 2 + BAR_GAP;
+const GROUP_GAP = 34;
+const TOP_PAD = 12;
+const PLOT_H = 170;
 const LABEL_H = 24;
 
 // A bar with a rounded data-end: only the top corners round, the bottom stays
@@ -62,8 +59,8 @@ function barPath(x: number, y: number, width: number, height: number) {
   ].join(" ");
 }
 
-// Chooses a top of scale whose halves are round numbers, so gridlines read as
-// 0 / 400 / 800 rather than 0 / 325 / 650.
+// Chooses a top of scale whose halves are round numbers, so the gridlines read
+// as 0 / 400 / 800 rather than 0 / 325 / 650.
 function niceMax(peak: number) {
   if (peak <= 0) return 100;
   const rough = peak / 2;
@@ -88,6 +85,22 @@ function niceMax(peak: number) {
   return step * 2;
 }
 
+// The tooltip carries the whole breakdown, so the single charge bar never hides
+// what it is made of. Zero parts are left out to keep it short.
+function chargesTooltip(month: ChartMonth) {
+  const lines = [`${month.month.slice(0, 7)} · задължение`];
+
+  for (const part of PARTS) {
+    const value = month[part.key];
+    if (value && value !== "0.00") {
+      lines.push(`${part.label}: ${formatMoney(value, month.currency)}`);
+    }
+  }
+
+  lines.push(`Общо: ${formatMoney(month.charges, month.currency)}`);
+  return lines.join("\n");
+}
+
 export function PropertyChart({ months }: { months: ChartMonth[] }) {
   if (months.length === 0) return null;
 
@@ -95,23 +108,14 @@ export function PropertyChart({ months }: { months: ChartMonth[] }) {
 
   // Only pixel geometry converts to a number; displayed amounts stay exact
   // decimal strings (see lib/money.ts).
-  const peak = (keys: readonly { key: keyof ChartMonth }[]) =>
-    Math.max(...months.flatMap((m) => keys.map((s) => Number(m[s.key]))), 1);
-
-  // Rent and utilities differ by an order of magnitude, so they get their own
-  // panels rather than one scale where a 12 EUR water bill is three pixels.
-  // Two panels sharing a month axis, never two scales on one plot.
-  const rentMax = niceMax(peak(MONEY_SERIES));
-  const billMax = niceMax(peak(BILL_SERIES));
+  const peak = Math.max(
+    ...months.flatMap((month) => [Number(month.charges), Number(month.paid)]),
+    1,
+  );
+  const max = niceMax(peak);
 
   const width = AXIS_W + months.length * (GROUP_W + GROUP_GAP);
-  const billTop = TOP_PAD + RENT_H + PANEL_GAP;
-  const height = billTop + BILL_H + LABEL_H;
-
-  const panels = [
-    { series: MONEY_SERIES, top: TOP_PAD, plot: RENT_H, max: rentMax, title: "Наем и плащане" },
-    { series: BILL_SERIES, top: billTop, plot: BILL_H, max: billMax, title: "Сметки" },
-  ] as const;
+  const height = TOP_PAD + PLOT_H + LABEL_H;
 
   return (
     <figure className="m-0">
@@ -121,103 +125,106 @@ export function PropertyChart({ months }: { months: ChartMonth[] }) {
           width={width}
           height={height}
           role="img"
-          aria-label="Начислен наем, сметки и платено по месеци"
+          aria-label="Задължение и платено по месеци"
           className="max-w-full"
           style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
         >
-          {panels.map((panel) => {
-            const barW = Math.floor(
-              (GROUP_W - (panel.series.length - 1) * BAR_GAP) / panel.series.length,
-            );
-            const groupInner = panel.series.length * barW + (panel.series.length - 1) * BAR_GAP;
-
+          {[0, 0.5, 1].map((t) => {
+            const y = TOP_PAD + PLOT_H - t * PLOT_H;
             return (
-              <g key={panel.title}>
-                <text x={0} y={panel.top - 8} fontSize={10} fill="#898781">
-                  {panel.title}
+              <g key={t}>
+                <line
+                  x1={AXIS_W}
+                  x2={width}
+                  y1={y}
+                  y2={y}
+                  stroke={t === 0 ? "#c3c2b7" : "#e1e0d9"}
+                  strokeWidth={1}
+                />
+                <text
+                  x={AXIS_W - 8}
+                  y={y + 3.5}
+                  textAnchor="end"
+                  fontSize={10}
+                  fill="#898781"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {Math.round(max * t)}
                 </text>
-
-                {[0, 0.5, 1].map((t) => {
-                  const y = panel.top + panel.plot - t * panel.plot;
-                  return (
-                    <g key={t}>
-                      <line
-                        x1={AXIS_W}
-                        x2={width}
-                        y1={y}
-                        y2={y}
-                        stroke={t === 0 ? "#c3c2b7" : "#e1e0d9"}
-                        strokeWidth={1}
-                      />
-                      <text
-                        x={AXIS_W - 8}
-                        y={y + 3.5}
-                        textAnchor="end"
-                        fontSize={10}
-                        fill="#898781"
-                        style={{ fontVariantNumeric: "tabular-nums" }}
-                      >
-                        {Math.round(panel.max * t)}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {months.map((month, index) => {
-                  const groupX =
-                    AXIS_W +
-                    GROUP_GAP / 2 +
-                    index * (GROUP_W + GROUP_GAP) +
-                    (GROUP_W - groupInner) / 2;
-
-                  return panel.series.map((series, seriesIndex) => {
-                    const value = Number(month[series.key]);
-                    const barHeight = (value / panel.max) * panel.plot;
-                    const x = groupX + seriesIndex * (barW + BAR_GAP);
-
-                    return (
-                      <g key={`${month.month}-${series.key}`}>
-                        {/* Hit target spans the panel so a small bar stays hoverable. */}
-                        <rect x={x} y={panel.top} width={barW} height={panel.plot} fill="transparent">
-                          <title>{`${month.month.slice(0, 7)} · ${series.label}: ${formatMoney(
-                            month[series.key],
-                            currency,
-                          )}`}</title>
-                        </rect>
-                        {barHeight > 0 && (
-                          <path
-                            d={barPath(x, panel.top + panel.plot - barHeight, barW, barHeight)}
-                            fill={series.color}
-                            pointerEvents="none"
-                          />
-                        )}
-                      </g>
-                    );
-                  });
-                })}
               </g>
             );
           })}
 
-          {months.map((month, index) => (
-            <text
-              key={month.month}
-              x={AXIS_W + GROUP_GAP / 2 + index * (GROUP_W + GROUP_GAP) + GROUP_W / 2}
-              y={billTop + BILL_H + 16}
-              textAnchor="middle"
-              fontSize={11}
-              fill="#52514e"
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
-              {month.month.slice(0, 7)}
-            </text>
-          ))}
+          {months.map((month, index) => {
+            const groupX = AXIS_W + GROUP_GAP / 2 + index * (GROUP_W + GROUP_GAP);
+
+            const bars = [
+              {
+                key: "charges" as const,
+                x: groupX,
+                color: CHARGES_COLOR,
+                tooltip: chargesTooltip(month),
+              },
+              {
+                key: "paid" as const,
+                x: groupX + BAR_W + BAR_GAP,
+                color: PAID_COLOR,
+                tooltip: `${month.month.slice(0, 7)} · платено: ${formatMoney(
+                  month.paid,
+                  currency,
+                )}`,
+              },
+            ];
+
+            return (
+              <g key={month.month}>
+                {bars.map((bar) => {
+                  const barHeight = (Number(month[bar.key]) / max) * PLOT_H;
+                  return (
+                    <g key={bar.key}>
+                      {/* Hit target spans the plot so a small bar stays hoverable. */}
+                      <rect
+                        x={bar.x}
+                        y={TOP_PAD}
+                        width={BAR_W}
+                        height={PLOT_H}
+                        fill="transparent"
+                      >
+                        <title>{bar.tooltip}</title>
+                      </rect>
+                      {barHeight > 0 && (
+                        <path
+                          d={barPath(bar.x, TOP_PAD + PLOT_H - barHeight, BAR_W, barHeight)}
+                          fill={bar.color}
+                          pointerEvents="none"
+                        />
+                      )}
+                    </g>
+                  );
+                })}
+
+                <text
+                  x={groupX + GROUP_W / 2}
+                  y={TOP_PAD + PLOT_H + 16}
+                  textAnchor="middle"
+                  fontSize={11}
+                  fill="#52514e"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {month.month.slice(0, 7)}
+                </text>
+              </g>
+            );
+          })}
         </svg>
       </div>
 
       <figcaption className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-        {ALL_SERIES.map((series) => (
-          <span key={series.key} className="flex items-center gap-1.5 text-xs text-neutral-600">
+        {[
+          { label: "Задължение (наем + сметки)", color: CHARGES_COLOR },
+          { label: "Платено", color: PAID_COLOR },
+        ].map((series) => (
+          <span key={series.label} className="flex items-center gap-1.5 text-xs text-neutral-600">
             <span
               aria-hidden
               className="inline-block h-2.5 w-2.5 rounded-sm"
@@ -231,9 +238,6 @@ export function PropertyChart({ months }: { months: ChartMonth[] }) {
   );
 }
 
-// Three of the series sit below 3:1 contrast on a light surface, so the numbers
-// must be readable without relying on the colours. This table is that relief,
-// and it also carries the charges the chart leaves out.
 const CHARGE_COLUMNS = [
   { key: "rent_due", label: "Наем" },
   { key: "bills_electricity", label: "Ток" },
@@ -242,60 +246,92 @@ const CHARGE_COLUMNS = [
   { key: "bills_building_fee", label: "Входна такса" },
 ] as const;
 
-export function PropertyChartTable({ months }: { months: ChartMonth[] }) {
+function BreakdownTable({ months }: { months: ChartMonth[] }) {
   const currency = months[0]?.currency ?? "EUR";
 
   return (
-    <details className="mt-3">
-      <summary className="cursor-pointer text-xs text-neutral-500 hover:text-neutral-900">
-        Виж като таблица
-      </summary>
-      <div className="mt-2 overflow-x-auto rounded-md border border-neutral-200">
-        <table className="w-full text-xs">
-          <thead className="border-b border-neutral-200 text-left text-neutral-500">
-            <tr>
-              <th className="px-3 py-1.5 font-medium">Месец</th>
-              {CHARGE_COLUMNS.map((s) => (
-                <th key={s.key} className="px-3 py-1.5 text-right font-medium">
-                  {s.label}
-                </th>
-              ))}
-              <th className="px-3 py-1.5 text-right font-medium">Друго</th>
-              <th className="px-3 py-1.5 text-right font-medium">Начислено</th>
-              <th className="px-3 py-1.5 text-right font-medium">Платено</th>
-              <th className="px-3 py-1.5 text-right font-medium">Баланс</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-200">
-            {[...months].reverse().map((month) => (
-              <tr key={month.month} style={{ fontVariantNumeric: "tabular-nums" }}>
-                <td className="px-3 py-1.5 whitespace-nowrap">{month.month.slice(0, 7)}</td>
-                {CHARGE_COLUMNS.map((s) => (
-                  <td key={s.key} className="px-3 py-1.5 text-right whitespace-nowrap">
-                    {formatMoney(month[s.key], currency)}
-                  </td>
-                ))}
-                <td className="px-3 py-1.5 text-right whitespace-nowrap">
-                  {formatMoney(
-                    addMoney(month.bills_internet, month.bills_other, month.expenses_due),
-                    currency,
-                  )}
-                </td>
-                <td className="px-3 py-1.5 text-right whitespace-nowrap">
-                  {formatMoney(month.charges, currency)}
-                </td>
-                <td className="px-3 py-1.5 text-right whitespace-nowrap">
-                  {formatMoney(month.paid, currency)}
-                </td>
-                <td className="px-3 py-1.5 text-right whitespace-nowrap">
-                  {formatMoney(month.balance.replace("-", ""), currency)}
-                  {month.balance.startsWith("-") ? " дълг" : ""}
-                </td>
-              </tr>
+    <div className="overflow-x-auto rounded-md border border-neutral-200">
+      <table className="w-full text-xs">
+        <thead className="border-b border-neutral-200 text-left text-neutral-500">
+          <tr>
+            <th className="px-3 py-1.5 font-medium">Месец</th>
+            {CHARGE_COLUMNS.map((column) => (
+              <th key={column.key} className="px-3 py-1.5 text-right font-medium">
+                {column.label}
+              </th>
             ))}
-          </tbody>
-        </table>
+            <th className="px-3 py-1.5 text-right font-medium">Друго</th>
+            <th className="px-3 py-1.5 text-right font-medium">Задължение</th>
+            <th className="px-3 py-1.5 text-right font-medium">Платено</th>
+            <th className="px-3 py-1.5 text-right font-medium">Баланс</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-neutral-200">
+          {[...months].reverse().map((month) => (
+            <tr key={month.month} style={{ fontVariantNumeric: "tabular-nums" }}>
+              <td className="px-3 py-1.5 whitespace-nowrap">{month.month.slice(0, 7)}</td>
+              {CHARGE_COLUMNS.map((column) => (
+                <td key={column.key} className="px-3 py-1.5 text-right whitespace-nowrap">
+                  {formatMoney(month[column.key], currency)}
+                </td>
+              ))}
+              <td className="px-3 py-1.5 text-right whitespace-nowrap">
+                {formatMoney(
+                  addMoney(month.bills_internet, month.bills_other, month.expenses_due),
+                  currency,
+                )}
+              </td>
+              <td className="px-3 py-1.5 text-right whitespace-nowrap">
+                {formatMoney(month.charges, currency)}
+              </td>
+              <td className="px-3 py-1.5 text-right whitespace-nowrap">
+                {formatMoney(month.paid, currency)}
+              </td>
+              <td className="px-3 py-1.5 text-right whitespace-nowrap">
+                {formatMoney(month.balance.replace("-", ""), currency)}
+                {month.balance.startsWith("-") ? " дълг" : ""}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function PropertyChartTable({
+  months,
+  propertyId,
+}: {
+  months: ChartMonth[];
+  propertyId: string;
+}) {
+  if (months.length === 0) return null;
+
+  return (
+    <>
+      <details className="no-print mt-3">
+        <summary className="cursor-pointer text-xs text-neutral-500 hover:text-neutral-900">
+          Виж като таблица
+        </summary>
+        <div className="mt-2">
+          <BreakdownTable months={months} />
+          <p className="mt-2 flex items-center gap-4 text-xs">
+            <a
+              href={`/properties/${propertyId}/export?table=breakdown`}
+              className="font-medium text-neutral-900 hover:underline"
+            >
+              Свали CSV
+            </a>
+            <PrintButton label="PDF" />
+          </p>
+        </div>
+      </details>
+
+      {/* On paper the table is always shown, whether or not it was opened. */}
+      <div className="mt-3 hidden print:block">
+        <BreakdownTable months={months} />
       </div>
-    </details>
+    </>
   );
 }

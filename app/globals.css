@@ -80,4 +80,16 @@ body {
   a[href]::after {
     content: "";
   }
+
+  /* One property per page in the printed report. */
+  .property-card {
+    break-inside: avoid;
+    border: none;
+    padding: 0;
+  }
+
+  .property-card + .property-card {
+    break-before: page;
+    margin-top: 0;
+  }
 }

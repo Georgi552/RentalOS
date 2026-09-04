@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireOrganization } from "@/lib/auth";
 import { csvResponse, slugify, toCsv, type CsvCell } from "@/lib/csv";
+import { addMoney } from "@/lib/money";
 
 // Amounts are exported as plain decimals, not formatted with a currency
 // symbol, so a spreadsheet can add them up.
@@ -24,6 +25,57 @@ export async function GET(
 
   const today = new Date().toISOString().slice(0, 10);
   const rows: CsvCell[][] = [];
+
+  // The dashboard breakdown: one row per month with the charge split by type,
+  // matching the "Виж като таблица" view.
+  if (table === "breakdown") {
+    const { data, error } = await supabase
+      .from("lease_monthly_ledger")
+      .select(
+        "month, currency, rent_due::text, bills_electricity::text, bills_water::text, bills_heating::text, bills_building_fee::text, bills_internet::text, bills_other::text, expenses_due::text, charges::text, paid::text, balance::text",
+      )
+      .eq("property_id", id)
+      .eq("organization_id", organizationId)
+      .order("month", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    rows.push([
+      "Месец",
+      "Валута",
+      "Наем",
+      "Ток",
+      "Вода",
+      "Топлофикация",
+      "Входна такса",
+      "Друго",
+      "Задължение",
+      "Платено",
+      "Баланс",
+    ]);
+
+    for (const row of (data ?? []) as unknown as Record<string, string>[]) {
+      rows.push([
+        String(row.month).slice(0, 7),
+        row.currency,
+        row.rent_due,
+        row.bills_electricity,
+        row.bills_water,
+        row.bills_heating,
+        row.bills_building_fee,
+        // Same "Друго" column the table shows: the bills the chart leaves out.
+        addMoney(row.bills_internet, row.bills_other, row.expenses_due),
+        row.charges,
+        row.paid,
+        row.balance,
+      ]);
+    }
+
+    return csvResponse(
+      `${slugify(property.name)}-zadalzheniya-${today}.csv`,
+      toCsv(rows),
+    );
+  }
 
   if (table === "financials") {
     const { data, error } = await supabase
