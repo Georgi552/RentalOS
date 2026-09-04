@@ -19,6 +19,7 @@ type BillDetail = {
   due_date: string | null;
   status: string;
   tenant_chargeable: boolean;
+  paid_by_landlord: boolean;
   extraction_confidence: string | null;
   match_reason: string | null;
   notes: string | null;
@@ -34,7 +35,7 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
   const { data, error } = await supabase
     .from("bills")
     .select(
-      "id, bill_type, provider, invoice_number, customer_number, period_start, period_end, amount::text, currency, due_date, status, tenant_chargeable, extraction_confidence::text, match_reason, notes, property:properties(id, name), document:documents(id, filename)",
+      "id, bill_type, provider, invoice_number, customer_number, period_start, period_end, amount::text, currency, due_date, status, tenant_chargeable, paid_by_landlord, extraction_confidence::text, match_reason, notes, property:properties(id, name), document:documents(id, filename)",
     )
     .eq("id", id)
     .eq("organization_id", organizationId)
@@ -59,7 +60,8 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
     ],
     ["Сума", formatMoney(bill.amount, bill.currency)],
     ["Падеж", bill.due_date],
-    ["Към наемателя", bill.tenant_chargeable ? "Да" : "Не"],
+    ["Плаща се от нас", bill.paid_by_landlord ? "Да" : "Не, наемателят плаща директно"],
+    ["Начислява се на наемателя", bill.tenant_chargeable ? "Да" : "Не"],
     ["Бележки", bill.notes],
   ];
 

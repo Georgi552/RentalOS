@@ -13,7 +13,9 @@ type FinancialRow = {
   rent_expected: string;
   rent_paid: string;
   expenses_total: string;
-  expenses_chargeable: string;
+  bills_total: string;
+  bills_we_pay: string;
+  tenant_charges: string;
   net: string;
 };
 
@@ -77,7 +79,7 @@ export default async function PropertyPage({
   const { data: financeData, error: financeError } = await supabase
     .from("property_monthly_financials")
     .select(
-      "month, currency, rent_expected::text, rent_paid::text, expenses_total::text, expenses_chargeable::text, net::text",
+      "month, currency, rent_expected::text, rent_paid::text, expenses_total::text, bills_total::text, bills_we_pay::text, tenant_charges::text, net::text",
     )
     .eq("property_id", id)
     .eq("organization_id", organizationId)
@@ -157,6 +159,10 @@ export default async function PropertyPage({
           Още няма записи. Добави{" "}
           <Link href="/rent/new" className="underline">
             наем
+          </Link>
+          {", "}
+          <Link href="/bills/new" className="underline">
+            сметка
           </Link>{" "}
           или{" "}
           <Link href="/expenses/new" className="underline">
@@ -170,31 +176,38 @@ export default async function PropertyPage({
             <thead className="border-b border-neutral-200 text-left text-xs text-neutral-500">
               <tr>
                 <th className="px-4 py-2 font-medium">Месец</th>
-                <th className="px-4 py-2 text-right font-medium">Очакван наем</th>
-                <th className="px-4 py-2 text-right font-medium">Платен наем</th>
+                <th className="px-4 py-2 text-right font-medium">Наем</th>
+                <th className="px-4 py-2 text-right font-medium">Сметки</th>
                 <th className="px-4 py-2 text-right font-medium">Разходи</th>
+                <th className="px-4 py-2 text-right font-medium">Към наемателя</th>
                 <th className="px-4 py-2 text-right font-medium">Нето</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
               {financials.map((row) => (
                 <tr key={`${row.month}-${row.currency}`}>
-                  <td className="px-4 py-2">{row.month.slice(0, 7)}</td>
-                  <td className="px-4 py-2 text-right">
-                    {formatMoney(row.rent_expected, row.currency)}
-                  </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2 whitespace-nowrap">{row.month.slice(0, 7)}</td>
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
                     {formatMoney(row.rent_paid, row.currency)}
+                    <span className="block text-xs text-neutral-500">
+                      от {formatMoney(row.rent_expected, row.currency)}
+                    </span>
                   </td>
-                  <td className="px-4 py-2 text-right">
-                    {formatMoney(row.expenses_total, row.currency)}
-                    {row.expenses_chargeable !== "0.00" && (
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    {formatMoney(row.bills_total, row.currency)}
+                    {row.bills_total !== row.bills_we_pay && (
                       <span className="block text-xs text-neutral-500">
-                        {formatMoney(row.expenses_chargeable, row.currency)} към наемателя
+                        плащаме {formatMoney(row.bills_we_pay, row.currency)}
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-right font-medium">
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    {formatMoney(row.expenses_total, row.currency)}
+                  </td>
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    {formatMoney(row.tenant_charges, row.currency)}
+                  </td>
+                  <td className="px-4 py-2 text-right font-medium whitespace-nowrap">
                     {formatMoney(row.net, row.currency)}
                   </td>
                 </tr>

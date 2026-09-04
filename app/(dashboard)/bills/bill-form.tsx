@@ -10,7 +10,12 @@ import {
   label,
 } from "@/lib/labels";
 import type { BillFormState } from "./actions";
-import { chargeableFromTerm, termKey, type TermLookup } from "./lease-terms-lookup";
+import {
+  chargeableFromTerm,
+  paidByLandlordFromTerm,
+  termKey,
+  type TermLookup,
+} from "./lease-terms-lookup";
 
 export type BillDefaults = {
   property_id: string;
@@ -26,6 +31,7 @@ export type BillDefaults = {
   due_date: string;
   status: string;
   tenant_chargeable: boolean;
+  paid_by_landlord: boolean;
   notes: string;
 };
 
@@ -60,12 +66,20 @@ export function BillForm({
 
   // Whether the tenant is charged follows the lease terms, which is the whole
   // point of recording them, until the landlord overrides it for this bill.
-  const [override, setOverride] = useState<boolean | null>(
+  const [chargeOverride, setChargeOverride] = useState<boolean | null>(
     state.values
       ? state.values.tenant_chargeable === "on"
       : (defaults?.tenant_chargeable ?? null),
   );
-  const chargeable = override ?? chargeableFromTerm(term);
+  const [payOverride, setPayOverride] = useState<boolean | null>(
+    state.values
+      ? state.values.paid_by_landlord === "on"
+      : (defaults?.paid_by_landlord ?? null),
+  );
+
+  const wePay = payOverride ?? paidByLandlordFromTerm(term);
+  // A bill we do not pay is nothing to pass on, so the charge follows.
+  const chargeable = wePay && (chargeOverride ?? chargeableFromTerm(term));
 
   return (
     <form action={formAction} className="mt-6 max-w-lg space-y-4">
@@ -179,34 +193,59 @@ export function BillForm({
         />
       </div>
 
-      <div className="rounded-md border border-neutral-200 px-3 py-3">
+      <div className="space-y-3 rounded-md border border-neutral-200 px-3 py-3">
         <label className="flex items-start gap-3">
           <input
             type="checkbox"
-            name="tenant_chargeable"
-            checked={chargeable}
-            onChange={(event) => setOverride(event.currentTarget.checked)}
+            name="paid_by_landlord"
+            checked={wePay}
+            onChange={(event) => setPayOverride(event.currentTarget.checked)}
             className="mt-0.5"
           />
           <span>
-            <span className="block text-sm font-medium">
-              Добавя се към справката на наемателя
-            </span>
+            <span className="block text-sm font-medium">Ние плащаме тази сметка</span>
             <span className="block text-xs text-neutral-500">
-              Само тези сметки влизат в месечната справка.
+              Махни отметката, ако наемателят плаща директно на дружеството. Тогава
+              сметката се пази за история, но не влиза в разходите ни.
             </span>
           </span>
         </label>
 
+        <label className="flex items-start gap-3 border-t border-neutral-200 pt-3">
+          <input
+            type="checkbox"
+            name="tenant_chargeable"
+            checked={chargeable}
+            disabled={!wePay}
+            onChange={(event) => setChargeOverride(event.currentTarget.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            <span className="block text-sm font-medium">
+              Начислява се на наемателя
+            </span>
+            <span className="block text-xs text-neutral-500">
+              {wePay
+                ? "Само тези сметки влизат в месечната справка на наемателя."
+                : "Не се начислява — наемателят я плаща сам."}
+            </span>
+            {state.fieldErrors?.tenant_chargeable && (
+              <span className="mt-1 block text-xs text-red-600">
+                {state.fieldErrors.tenant_chargeable}
+              </span>
+            )}
+          </span>
+        </label>
+
         {term ? (
-          <p className="mt-2 border-t border-neutral-200 pt-2 text-xs text-neutral-500">
+          <p className="border-t border-neutral-200 pt-3 text-xs text-neutral-500">
             По активния договор: {label(PAYER_LABELS, term.payer)}
             {term.payer === "tenant" && ` — ${label(COLLECTION_LABELS, term.collection)}`}
           </p>
         ) : (
           propertyId &&
           billType && (
-            <p className="mt-2 border-t border-neutral-200 pt-2 text-xs text-neutral-500">
+            <p className="border-t border-neutral-200 pt-3 text-xs text-neutral-500">
               Няма активен договор с условия за тази сметка.
             </p>
           )

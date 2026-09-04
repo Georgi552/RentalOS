@@ -40,6 +40,7 @@ function parse(formData: FormData) {
     due_date: text(formData, "due_date"),
     status: text(formData, "status") || "needs_review",
     tenant_chargeable: formData.get("tenant_chargeable") ? "on" : "",
+    paid_by_landlord: formData.get("paid_by_landlord") ? "on" : "",
     notes: text(formData, "notes"),
   };
 
@@ -82,6 +83,12 @@ function parse(formData: FormData) {
     fieldErrors.property_id = "Потвърдена сметка трябва да е свързана с имот.";
   }
 
+  // If the tenant pays the provider directly, we have nothing to pass on.
+  if (values.tenant_chargeable === "on" && values.paid_by_landlord !== "on") {
+    fieldErrors.tenant_chargeable =
+      "Сметка, която не плащаме ние, не може да се начислява на наемателя.";
+  }
+
   if (Object.keys(fieldErrors).length > 0 || !amount.ok) {
     return { ok: false as const, state: { fieldErrors, values } };
   }
@@ -102,6 +109,7 @@ function parse(formData: FormData) {
       due_date: values.due_date || null,
       status: values.status,
       tenant_chargeable: values.tenant_chargeable === "on",
+      paid_by_landlord: values.paid_by_landlord === "on",
       notes: values.notes || null,
     },
     values,

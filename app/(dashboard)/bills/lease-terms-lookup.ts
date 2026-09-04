@@ -45,3 +45,10 @@ export async function activeLeaseTerms(
 export function chargeableFromTerm(term?: { payer: string; collection: string }) {
   return term?.payer === "tenant" && term.collection === "via_rent";
 }
+
+// Money actually leaves our pocket unless the tenant pays the provider direct.
+// Without this the monthly net counts bills we never paid.
+export function paidByLandlordFromTerm(term?: { payer: string; collection: string }) {
+  if (!term) return true;
+  return !(term.payer === "tenant" && term.collection === "direct");
+}

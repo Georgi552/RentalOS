@@ -13,6 +13,7 @@ type BillRow = {
   currency: string;
   status: string;
   tenant_chargeable: boolean;
+  paid_by_landlord: boolean;
   property: { name: string } | null;
 };
 
@@ -22,7 +23,7 @@ export default async function BillsPage() {
   const { data, error } = await supabase
     .from("bills")
     .select(
-      "id, bill_type, provider, period_start, period_end, amount::text, currency, status, tenant_chargeable, property:properties(name)",
+      "id, bill_type, provider, period_start, period_end, amount::text, currency, status, tenant_chargeable, paid_by_landlord, property:properties(name)",
     )
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
@@ -86,7 +87,11 @@ export default async function BillsPage() {
                     }`}
                   >
                     {label(BILL_STATUS_LABELS, bill.status)}
-                    {bill.tenant_chargeable ? " · към наемателя" : ""}
+                    {bill.tenant_chargeable
+                      ? " · към наемателя"
+                      : bill.paid_by_landlord
+                        ? ""
+                        : " · плаща се директно"}
                   </span>
                 </span>
               </Link>
