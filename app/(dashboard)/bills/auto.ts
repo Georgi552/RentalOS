@@ -122,6 +122,14 @@ export async function autoCreateBillFromDocument(documentId: string): Promise<Au
       }
     }
 
+    if (error.message.includes("bills_overlapping_period")) {
+      return {
+        outcome: "review",
+        reason:
+          "Периодът се застъпва с друга сметка от същия вид за същия имот. Провери датите.",
+      };
+    }
+
     return { outcome: "review", reason: error.message };
   }
 

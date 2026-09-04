@@ -20,13 +20,9 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 - The charge month comes from the period end, so an invoice that arrives very
   late can land in a month whose statement has already been sent.
   charge_month_override moves it.
-- A run of split invoices is detected by period length: at most 20 days and
-  starting within 3 days of the previous period ending. A provider issuing
-  genuine 20-day cycles would be grouped wrongly; the charge month can be set
-  by hand in that case.
-- Only one bill of a kind per property per period is allowed. If a provider
-  ever splits one period across two invoices, the second is refused and has to
-  be entered with a different period.
+- Bills of the same kind for one property may not have overlapping periods; a
+  trigger refuses them. Adjacent periods are fine, and a month can carry more
+  than one period.
 - A bill is charged to the tenant automatically only when the lease records
   terms for that bill type. Leases created before migration 0003 have none, so
   their bills default to "not charged" until the terms are filled in.
