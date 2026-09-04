@@ -50,12 +50,10 @@ export function firstMatch(text: string, patterns: RegExp[]): string | null {
   return null;
 }
 
-// The month a billing period belongs to.
-//
-// Taking the start of the period is wrong: a water invoice covering
-// 24.06 - 30.07 is the July bill, not June's. Taking the end is wrong too: an
-// electricity invoice covering 15.07 - 13.08 is still July's. The midpoint
-// gets both right, and matches how a landlord files them.
+// The consumption month an invoice covers, from the middle of its period.
+// This labels the invoice; it is NOT the month the tenant is charged in. That
+// is decided by public.charge_month() from the period end and the lease's rent
+// due day (migration 0014).
 export function periodMonth(
   start: ParsedDate | null,
   end: ParsedDate | null,

@@ -17,6 +17,9 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 
 ## Known limitations to revisit
 
+- The charge month comes from the period end, so an invoice that arrives very
+  late can land in a month whose statement has already been sent.
+  charge_month_override moves it.
 - A run of split invoices is detected by period length: at most 20 days and
   starting within 3 days of the previous period ending. A provider issuing
   genuine 20-day cycles would be grouped wrongly; the charge month can be set
