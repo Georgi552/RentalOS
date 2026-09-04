@@ -17,6 +17,13 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 
 ## Known limitations to revisit
 
+- Only one bill of a kind per property per period is allowed. If a provider
+  ever splits one period across two invoices, the second is refused and has to
+  be entered with a different period.
+- A bill is charged to the tenant automatically only when the lease records
+  terms for that bill type. Leases created before migration 0003 have none, so
+  their bills default to "not charged" until the terms are filled in.
+
 - The ledger matches charges to the lease currency. A bill raised in another
   currency is left out rather than added to a different one. Fine while a lease
   is single-currency; needs FX rates if that changes.

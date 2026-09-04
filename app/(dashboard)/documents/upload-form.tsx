@@ -11,6 +11,7 @@ import {
 } from "@/lib/documents";
 import { DOCUMENT_BUCKET } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/client";
+import { autoCreateBillFromDocument } from "@/app/(dashboard)/bills/auto";
 import { recordDocument } from "./actions";
 
 export function UploadForm({
@@ -81,10 +82,22 @@ export function UploadForm({
       return;
     }
 
-    // A PDF is almost always an invoice, so go straight to reading it.
-    router.push(
-      file.type === "application/pdf" ? `/bills/new?document=${documentId}` : "/documents",
-    );
+    if (file.type !== "application/pdf") {
+      router.push("/documents");
+      return;
+    }
+
+    // Read it and, when the invoice and the property are both certain, write
+    // the bill without asking. Anything less goes to the form.
+    const auto = await autoCreateBillFromDocument(documentId);
+
+    if (auto.outcome === "created") {
+      router.push(`/bills/${auto.billId}?created=1`);
+    } else if (auto.outcome === "duplicate") {
+      router.push(`/bills/${auto.billId}?duplicate=1`);
+    } else {
+      router.push(`/bills/new?document=${documentId}`);
+    }
   }
 
   return (

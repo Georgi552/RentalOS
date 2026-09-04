@@ -30,7 +30,7 @@ type BillDetail = {
 
 export default async function BillPage({ params, searchParams }: PageProps<"/bills/[id]">) {
   const { id } = await params;
-  const { error: actionError } = await searchParams;
+  const { error: actionError, created, duplicate } = await searchParams;
   const { supabase, organizationId } = await requireOrganization();
 
   const { data, error } = await supabase
@@ -97,6 +97,19 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
           />
         </div>
       </div>
+
+      {created === "1" && (
+        <p className="mt-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+          Фактурата е прочетена и вписана автоматично. Провери числата.
+        </p>
+      )}
+
+      {duplicate === "1" && (
+        <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Тази сметка вече беше въведена — това е съществуващият запис. Изтрий го,
+          ако искаш да го замениш с новия документ.
+        </p>
+      )}
 
       {typeof actionError === "string" && (
         <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{actionError}</p>

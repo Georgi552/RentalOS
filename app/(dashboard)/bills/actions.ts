@@ -131,6 +131,12 @@ function friendlyError(error: { code?: string; message: string }) {
   if (error.code === "23514" && error.message.includes("bills_confirmed_needs_property")) {
     return "Потвърдена сметка трябва да е свързана с имот.";
   }
+  if (error.code === "23505" && error.message.includes("bills_one_per_invoice_number")) {
+    return "Фактура с този номер от този доставчик вече е въведена. Изтрий съществуващата, ако искаш да я замениш.";
+  }
+  if (error.code === "23505" && error.message.includes("bills_one_per_property_type_period")) {
+    return "За този имот вече има сметка от същия вид за същия период. Изтрий съществуващата, ако искаш да я замениш.";
+  }
   if (error.code === "23503") {
     return "Избраният имот или документ вече не съществува.";
   }
