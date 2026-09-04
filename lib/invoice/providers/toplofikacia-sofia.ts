@@ -36,6 +36,12 @@ export const toplofikaciaSofia: ProviderAdapter = {
       // Anchored on the invoice total. The sheet also lists arrears and credits
       // as separate signed figures, and those are not this month's charge.
       amount: parseAmount(firstMatch(text, [/ВСИЧКО по фактура\s*([\d\s.,]+)/])),
+      // "Оставаща сума за плащане" is the invoice total after the account's own
+      // credit or arrears. It is 0.00 when a refund already covers the month.
+      amountDue: parseAmount(
+        firstMatch(text, [/Оставаща сума за плащане по фактура\s*№?\s*\d+\s*([\d\s.,-]+)/]),
+      ),
+      providerBalanceNote: creditNote(text),
       currency: "EUR",
       // The recipient block is: label, then the name, then the address.
       serviceAddress: firstMatch(text, [/ПОЛУЧАТЕЛ:\s*\n[^\n]*\n([^\n]+)/]),
@@ -43,3 +49,25 @@ export const toplofikaciaSofia: ProviderAdapter = {
     };
   },
 };
+
+// The equalisation account can leave a credit that the invoice reports on its
+// own line. Worth carrying through, because it explains a zero to pay.
+function creditNote(text: string) {
+  const credit = firstMatch(text, [
+    /имате сума за получаване на обща стойност\s*([\d\s.,]+)/,
+  ]);
+  if (credit) {
+    const amount = parseAmount(credit);
+    if (amount && amount !== "0.00") return `Кредит при доставчика: ${amount} EUR`;
+  }
+
+  const arrears = firstMatch(text, [
+    /Просрочени суми \(главница\)[^\n]*?([\d\s.,]+)\s*Евро/,
+  ]);
+  if (arrears) {
+    const amount = parseAmount(arrears);
+    if (amount && amount !== "0.00") return `Просрочени суми при доставчика: ${amount} EUR`;
+  }
+
+  return null;
+}

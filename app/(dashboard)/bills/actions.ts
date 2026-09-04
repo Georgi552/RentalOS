@@ -43,6 +43,7 @@ function parse(formData: FormData) {
     // invoices that arrive by extraction later.
     status: "confirmed",
     charge_month_override: text(formData, "charge_month_override"),
+    invoice_total: text(formData, "invoice_total"),
     tenant_chargeable: formData.get("tenant_chargeable") ? "on" : "",
     paid_by_landlord: formData.get("paid_by_landlord") ? "on" : "",
     notes: text(formData, "notes"),
@@ -57,6 +58,13 @@ function parse(formData: FormData) {
 
   const amount = parseMoney(values.amount, "Сумата");
   if (!amount.ok) fieldErrors.amount = amount.error;
+
+  let invoiceTotal: string | null = null;
+  if (values.invoice_total) {
+    const parsed = parseMoney(values.invoice_total, "Сумата по фактура");
+    if (!parsed.ok) fieldErrors.invoice_total = parsed.error;
+    else invoiceTotal = parsed.value;
+  }
 
   for (const [key, dateLabel] of [
     ["issue_date", "Датата на издаване"],
@@ -121,6 +129,7 @@ function parse(formData: FormData) {
       period_start: values.period_start || null,
       period_end: values.period_end || null,
       amount: amount.value,
+      invoice_total: invoiceTotal,
       currency: values.currency,
       due_date: values.due_date || null,
       status: values.status,

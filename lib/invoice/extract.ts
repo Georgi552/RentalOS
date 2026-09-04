@@ -84,6 +84,21 @@ export function validate(invoice: ExtractedInvoice) {
     warnings.push({ field: "amount", message: "Сумата е нула." });
   }
 
+  // A credit or arrears at the provider makes the payable amount differ from
+  // the period's charge. Which of the two belongs on the tenant's statement
+  // depends on whose money produced the credit, so it is never guessed.
+  if (invoice.amountDue && invoice.amount && invoice.amountDue !== invoice.amount) {
+    warnings.push({
+      field: "amount",
+      message:
+        `Начислено за периода: ${invoice.amount}. Реално за плащане: ${invoice.amountDue}.` +
+        (invoice.providerBalanceNote ? ` ${invoice.providerBalanceNote}.` : "") +
+        " Избери кое да запишеш.",
+    });
+  } else if (invoice.providerBalanceNote) {
+    warnings.push({ field: "amount", message: `${invoice.providerBalanceNote}.` });
+  }
+
   if (invoice.periodStart && invoice.periodEnd && invoice.periodEnd < invoice.periodStart) {
     errors.push({ field: "period", message: "Краят на периода е преди началото." });
   }

@@ -14,7 +14,13 @@ export type ExtractedInvoice = {
   periodEnd: string | null;
   // The month the bill belongs to, from the middle of its period.
   periodMonth: string | null;
+  // What the invoice charges for the period. This is the consumption.
   amount: string | null;
+  // What is actually payable now, when the invoice states it separately -
+  // a credit or an arrears balance at the provider makes the two differ.
+  amountDue: string | null;
+  // The provider-side balance in words, when the invoice reports one.
+  providerBalanceNote: string | null;
   currency: "EUR" | "BGN";
   // Address as printed on the invoice, used for property matching.
   serviceAddress: string | null;

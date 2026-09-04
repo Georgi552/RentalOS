@@ -40,7 +40,14 @@ export default async function NewBillPage({ searchParams }: PageProps<"/bills/ne
           period_start: invoice.periodStart ?? "",
           period_end: invoice.periodEnd ?? "",
           due_date: invoice.dueDate ?? "",
-          amount: invoice.amount ?? "",
+          // When the invoice states a payable amount that differs from the
+          // period charge, the payable one is offered and the charge is kept
+          // beside it. The warning above says why, and the landlord decides.
+          amount: invoice.amountDue ?? invoice.amount ?? "",
+          invoice_total:
+            invoice.amountDue && invoice.amountDue !== invoice.amount
+              ? (invoice.amount ?? "")
+              : "",
           currency: invoice.currency,
         }
       : {}),

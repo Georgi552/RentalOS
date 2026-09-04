@@ -33,6 +33,10 @@ export const electrohold: ProviderAdapter = {
       periodEnd,
       periodMonth: periodMonth(periodStart, periodEnd),
       amount: parseAmount(firstMatch(text, [/Обща стойност на сделката\s*([\d\s.,]+)/])),
+      // This invoice does not print a combined total, so the payable amount is
+      // left unstated and the past-period figures are surfaced as a note.
+      amountDue: null,
+      providerBalanceNote: pastPeriodNote(text),
       currency: "EUR",
       serviceAddress: firstMatch(text, [/За обект\s*([^\n]+)/]),
       meterReadings: [
@@ -70,6 +74,20 @@ function readingRow(text: string, tariff: string) {
       return { previous, current };
     }
   }
+
+  return null;
+}
+
+function pastPeriodNote(text: string) {
+  const refund = parseAmount(
+    firstMatch(text, [/Възстановена сума от предходен период \(-\)\s*([\d\s.,]+)/]),
+  );
+  if (refund && refund !== "0.00") return `Възстановена сума от предходен период: ${refund} EUR`;
+
+  const pastDue = parseAmount(
+    firstMatch(text, [/Сума за плащане за минал период\s*([\d\s.,]+)/]),
+  );
+  if (pastDue && pastDue !== "0.00") return `Сума за минал период: ${pastDue} EUR`;
 
   return null;
 }

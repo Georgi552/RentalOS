@@ -48,6 +48,17 @@ export async function autoCreateBillFromDocument(documentId: string): Promise<Au
     return { outcome: "review", reason: "Липсва сума или дата на издаване." };
   }
 
+  // The charge and the payable amount differ, so a person decides which one
+  // this bill is. Writing either silently would be a guess about money.
+  if (invoice.amountDue && invoice.amountDue !== invoice.amount) {
+    await setStatus(supabase, organizationId, documentId, "needs_review");
+    return {
+      outcome: "review",
+      reason: `Начислено ${invoice.amount}, но за плащане ${invoice.amountDue}.` +
+        (invoice.providerBalanceNote ? ` ${invoice.providerBalanceNote}.` : ""),
+    };
+  }
+
   if (match.confidence !== "certain" || !match.propertyId) {
     await setStatus(supabase, organizationId, documentId, "needs_review");
     return { outcome: "review", reason: match.reason };

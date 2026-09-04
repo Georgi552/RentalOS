@@ -29,6 +29,7 @@ export type BillDefaults = {
   period_start: string;
   period_end: string;
   amount: string;
+  invoice_total: string;
   currency: string;
   due_date: string;
   status: string;
@@ -170,7 +171,7 @@ export function BillForm({
           required
           defaultValue={value("amount")}
           error={state.fieldErrors?.amount}
-          hint="Например 72.40"
+          hint="Тази сума влиза в парите"
         />
         <SelectField
           label="Валута"
@@ -184,6 +185,14 @@ export function BillForm({
           ]}
         />
       </div>
+
+      <Field
+        label="Сума по фактура"
+        name="invoice_total"
+        defaultValue={value("invoice_total")}
+        error={state.fieldErrors?.invoice_total}
+        hint="Попълва се само ако фактурата пише различно число от горното — за справка"
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <Field

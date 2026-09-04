@@ -40,9 +40,17 @@ export const sofiyskaVoda: ProviderAdapter = {
           /ОБЩА ДЪЛЖИМА СУМА\s*([\d\s.,]+)/,
         ]),
       ),
+      // The total due adds "Старо салдо", which belongs to earlier periods.
+      amountDue: parseAmount(firstMatch(text, [/ОБЩА ДЪЛЖИМА СУМА\s*([\d\s.,-]+)/])),
+      providerBalanceNote: oldBalanceNote(text),
       currency: "EUR",
       serviceAddress: firstMatch(text, [/АДРЕС НА КОНСУМАЦИЯ:\s*([^\n]+)/i]),
       meterReadings,
     };
   },
 };
+
+function oldBalanceNote(text: string) {
+  const balance = parseAmount(firstMatch(text, [/Старо салдо\s*([\d\s.,-]+)/]));
+  return balance && balance !== "0.00" ? `Старо салдо при доставчика: ${balance} EUR` : null;
+}
