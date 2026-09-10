@@ -61,15 +61,18 @@ export function statementHtml(statement: Statement) {
           statement.split
             ? section("Наем", row("Наем за месеца", null, statement.rentDue) +
                 carriedRow(statement, statement.rentBalanceBefore) +
-                totalRow(statement, statement.rentTotalDue)) +
+                totalRow(statement, statement.rentTotalDue) +
+                creditRow(statement, statement.rentCreditRemaining)) +
               section("Сметки",
                 statement.lines.map((line) => row(lineLabel(line.label), line.detail, line.amount)).join("") +
                 carriedRow(statement, statement.billsBalanceBefore) +
-                totalRow(statement, statement.billsTotalDue))
+                totalRow(statement, statement.billsTotalDue) +
+                creditRow(statement, statement.billsCreditRemaining))
             : row("Наем", null, statement.rentDue) +
               statement.lines.map((line) => row(lineLabel(line.label), line.detail, line.amount)).join("") +
               carried +
-              totalRow(statement, statement.totalDue)
+              totalRow(statement, statement.totalDue) +
+              creditRow(statement, statement.creditRemaining)
         }
       </table>
 
@@ -90,6 +93,16 @@ function carriedRow(statement: Statement, balance: string) {
       <td style="padding:6px 0;border-bottom:1px solid #e1e0d9">${label}</td>
       <td style="padding:6px 0;border-bottom:1px solid #e1e0d9;text-align:right;white-space:nowrap">
         ${escapeHtml(formatMoney(balance.replace("-", ""), statement.currency))}
+      </td>
+    </tr>`;
+}
+
+function creditRow(statement: Statement, credit: string) {
+  if (credit === "0.00") return "";
+  return `<tr>
+      <td style="padding:6px 0;color:#52514e">Оставащ кредит за следващия месец</td>
+      <td style="padding:6px 0;text-align:right;color:#52514e;white-space:nowrap">
+        ${escapeHtml(formatMoney(credit, statement.currency))}
       </td>
     </tr>`;
 }
@@ -118,7 +131,11 @@ export function statementText(statement: Statement) {
     if (statement.rentBalanceBefore !== "0.00") {
       lines.push(`${statement.rentBalanceBefore.startsWith("-") ? "От предходен месец" : "Надплатено от предходен месец"}: ${formatMoney(statement.rentBalanceBefore.replace("-", ""), statement.currency)}`);
     }
-    lines.push(`За плащане по наем: ${formatMoney(statement.rentTotalDue, statement.currency)}`, "", "СМЕТКИ");
+    lines.push(`За плащане по наем: ${formatMoney(statement.rentTotalDue, statement.currency)}`);
+    if (statement.rentCreditRemaining !== "0.00") {
+      lines.push(`Оставащ кредит по наем: ${formatMoney(statement.rentCreditRemaining, statement.currency)}`);
+    }
+    lines.push("", "СМЕТКИ");
     for (const line of statement.lines) {
       lines.push(`${lineLabel(line.label)}${line.detail ? ` (${line.detail})` : ""}: ${formatMoney(line.amount, statement.currency)}`);
     }
@@ -126,6 +143,9 @@ export function statementText(statement: Statement) {
       lines.push(`${statement.billsBalanceBefore.startsWith("-") ? "От предходен месец" : "Надплатено от предходен месец"}: ${formatMoney(statement.billsBalanceBefore.replace("-", ""), statement.currency)}`);
     }
     lines.push(`За плащане по сметки: ${formatMoney(statement.billsTotalDue, statement.currency)}`);
+    if (statement.billsCreditRemaining !== "0.00") {
+      lines.push(`Оставащ кредит по сметки: ${formatMoney(statement.billsCreditRemaining, statement.currency)}`);
+    }
     return lines.join("\n");
   }
 
@@ -157,6 +177,9 @@ export function statementText(statement: Statement) {
   }
 
   lines.push("", `За плащане: ${formatMoney(statement.totalDue, statement.currency)}`);
+  if (statement.creditRemaining !== "0.00") {
+    lines.push(`Оставащ кредит за следващия месец: ${formatMoney(statement.creditRemaining, statement.currency)}`);
+  }
   return lines.join("\n");
 }
 

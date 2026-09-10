@@ -21,8 +21,11 @@ export type Statement = {
   expensesDue: string;
   charges: string;
   balanceBefore: string;
-  // What the tenant owes now: this month's charges plus anything carried over.
+  // What the tenant owes now: this month's charges plus anything carried over,
+  // never below zero.
   totalDue: string;
+  // What is left of a credit after this month took its share.
+  creditRemaining: string;
   // A lease where rent and bills are settled separately gets two of everything,
   // because one total would let a rent credit hide an unpaid bill.
   split: boolean;
@@ -30,6 +33,8 @@ export type Statement = {
   billsBalanceBefore: string;
   rentTotalDue: string;
   billsTotalDue: string;
+  rentCreditRemaining: string;
+  billsCreditRemaining: string;
   paid: string;
   dueDate: string;
   lines: StatementLine[];
@@ -164,12 +169,15 @@ export async function buildStatement(
     expensesDue: current.expenses_due,
     charges: current.charges,
     balanceBefore,
-    totalDue: addMoney(current.charges, negate(balanceBefore)),
+    totalDue: amountToPay(current.charges, balanceBefore),
+    creditRemaining: creditLeftOver(current.charges, balanceBefore),
     split: current.split_rent_and_bills,
     rentBalanceBefore,
     billsBalanceBefore,
-    rentTotalDue: addMoney(current.rent_due, negate(rentBalanceBefore)),
-    billsTotalDue: addMoney(current.bills_and_expenses_due, negate(billsBalanceBefore)),
+    rentTotalDue: amountToPay(current.rent_due, rentBalanceBefore),
+    billsTotalDue: amountToPay(current.bills_and_expenses_due, billsBalanceBefore),
+    rentCreditRemaining: creditLeftOver(current.rent_due, rentBalanceBefore),
+    billsCreditRemaining: creditLeftOver(current.bills_and_expenses_due, billsBalanceBefore),
     paid: current.paid,
     dueDate: `${month}-${String(context.rent_due_day).padStart(2, "0")}`,
     lines: [
@@ -200,6 +208,20 @@ export async function buildStatement(
 // month's charges rather than subtracted.
 function negate(value: string) {
   return value.startsWith("-") ? value.slice(1) : `-${value}`;
+}
+
+// A credit larger than the month's charges leaves nothing to pay. Without the
+// floor the tenant is asked for a negative amount, which reads as nonsense on
+// an invoice and is the sort of thing that gets a landlord a phone call.
+function amountToPay(charges: string, balanceBefore: string) {
+  const total = addMoney(charges, negate(balanceBefore));
+  return total.startsWith("-") ? "0.00" : total;
+}
+
+// The other side of that floor: what the tenant keeps for next month.
+function creditLeftOver(charges: string, balanceBefore: string) {
+  const total = addMoney(charges, negate(balanceBefore));
+  return total.startsWith("-") ? total.slice(1) : "0.00";
 }
 
 // The month a bill belongs to, mirroring lease_monthly_ledger exactly:

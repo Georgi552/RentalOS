@@ -118,6 +118,16 @@ export default async function StatementPage({
                 {formatMoney(statement.totalDue, statement.currency)}
               </td>
             </tr>
+            {statement.creditRemaining !== "0.00" && (
+              <tr>
+                <td className="py-2 text-sm text-neutral-500">
+                  Оставащ кредит за следващия месец
+                </td>
+                <td className="py-2 text-right text-sm whitespace-nowrap text-neutral-500">
+                  {formatMoney(statement.creditRemaining, statement.currency)}
+                </td>
+              </tr>
+            )}
           </tfoot>
         </table>
 
@@ -165,6 +175,7 @@ function SplitTotals({
     rows: { label: string; detail: string | null; amount: string }[],
     balanceBefore: string,
     total: string,
+    credit: string,
   ) => (
     <div className="mt-5">
       <h2 className="text-sm font-semibold">{title}</h2>
@@ -197,6 +208,14 @@ function SplitTotals({
               {formatMoney(total, statement.currency)}
             </td>
           </tr>
+          {credit !== "0.00" && (
+            <tr>
+              <td className="py-2 text-neutral-500">Оставащ кредит за следващия месец</td>
+              <td className="py-2 text-right whitespace-nowrap text-neutral-500">
+                {formatMoney(credit, statement.currency)}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -209,8 +228,15 @@ function SplitTotals({
         [{ label: "Наем за месеца", detail: null, amount: statement.rentDue }],
         statement.rentBalanceBefore,
         statement.rentTotalDue,
+        statement.rentCreditRemaining,
       )}
-      {section("Сметки", lines, statement.billsBalanceBefore, statement.billsTotalDue)}
+      {section(
+        "Сметки",
+        lines,
+        statement.billsBalanceBefore,
+        statement.billsTotalDue,
+        statement.billsCreditRemaining,
+      )}
     </>
   );
 }
