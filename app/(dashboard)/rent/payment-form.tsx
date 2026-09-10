@@ -10,14 +10,25 @@ export function PaymentForm({
   leases,
   defaults,
   due,
+  split,
   submitLabel,
   cancelHref,
 }: {
   action: (state: PaymentFormState, formData: FormData) => Promise<PaymentFormState>;
   leases: { value: string; label: string }[];
-  defaults?: { lease_id?: string; period_month?: string; paid_amount?: string; payment_date?: string; notes?: string };
+  defaults?: {
+    lease_id?: string;
+    period_month?: string;
+    paid_amount?: string;
+    paid_rent?: string;
+    paid_bills?: string;
+    payment_date?: string;
+    notes?: string;
+  };
   // What the ledger says is owed for the chosen month, when it is known.
   due?: { charges: string; rent: string; bills: string; expenses: string; balanceBefore: string; currency: string };
+  // A split lease is settled as two amounts, each against its own balance.
+  split?: { rentBalance: string; billsBalance: string };
   submitLabel: string;
   cancelHref: string;
 }) {
@@ -80,15 +91,36 @@ export function PaymentForm({
           hint="Формат: 2026-08"
           maxLength={7}
         />
-        <Field
-          label="Платена сума"
-          name="paid_amount"
-          required
-          defaultValue={value("paid_amount", "0")}
-          error={state.fieldErrors?.paid_amount}
-          hint="Колко е платил наемателят"
-        />
+        {!split && (
+          <Field
+            label="Платена сума"
+            name="paid_amount"
+            required
+            defaultValue={value("paid_amount", "0")}
+            error={state.fieldErrors?.paid_amount}
+            hint="Колко е платил наемателят"
+          />
+        )}
       </div>
+
+      {split && (
+        <div className="grid grid-cols-2 gap-4">
+          <Field
+            label="Платено за наем"
+            name="paid_rent"
+            defaultValue={value("paid_rent", "0")}
+            error={state.fieldErrors?.paid_rent}
+            hint={`Баланс по наем: ${split.rentBalance}`}
+          />
+          <Field
+            label="Платено за сметки"
+            name="paid_bills"
+            defaultValue={value("paid_bills", "0")}
+            error={state.fieldErrors?.paid_bills}
+            hint={`Баланс по сметки: ${split.billsBalance}`}
+          />
+        </div>
+      )}
 
       <Field
         label="Дата на плащане"

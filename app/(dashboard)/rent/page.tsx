@@ -16,7 +16,7 @@ export default async function RentPage({ searchParams }: PageProps<"/rent">) {
   const { data, error } = await supabase
     .from("lease_monthly_ledger")
     .select(
-      "lease_id, property_id, tenant_id, currency, month, payment_id, rent_due::text, bills_due::text, expenses_due::text, charges::text, charges_due::text, due_date, is_due, paid::text, balance::text, property:properties(name), tenant:tenants(first_name, last_name)",
+      "lease_id, property_id, tenant_id, currency, month, payment_id, rent_due::text, bills_due::text, expenses_due::text, charges::text, charges_due::text, bills_and_expenses_due::text, due_date, is_due, paid::text, paid_rent::text, paid_bills::text, rent_balance::text, bills_balance::text, split_rent_and_bills, balance::text, property:properties(name), tenant:tenants(first_name, last_name)",
     )
     .eq("organization_id", organizationId)
     .order("month", { ascending: false })
@@ -90,12 +90,23 @@ export default async function RentPage({ searchParams }: PageProps<"/rent">) {
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     {formatMoney(row.paid, row.currency)}
                   </td>
-                  <td
-                    className={`px-4 py-2 text-right font-medium whitespace-nowrap ${balanceTone(row.balance)}`}
-                  >
-                    {formatMoney(row.balance.replace("-", ""), row.currency)}
-                    <span className="block text-xs font-normal">{balanceNote(row.balance)}</span>
-                  </td>
+                  {row.split_rent_and_bills ? (
+                    <td className="px-4 py-2 text-right whitespace-nowrap">
+                      <span className={`block text-sm font-medium ${balanceTone(row.rent_balance)}`}>
+                        наем {formatMoney(row.rent_balance.replace("-", ""), row.currency)}
+                      </span>
+                      <span className={`block text-xs ${balanceTone(row.bills_balance)}`}>
+                        сметки {formatMoney(row.bills_balance.replace("-", ""), row.currency)}
+                      </span>
+                    </td>
+                  ) : (
+                    <td
+                      className={`px-4 py-2 text-right font-medium whitespace-nowrap ${balanceTone(row.balance)}`}
+                    >
+                      {formatMoney(row.balance.replace("-", ""), row.currency)}
+                      <span className="block text-xs font-normal">{balanceNote(row.balance)}</span>
+                    </td>
+                  )}
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     <Link
                       href={`/rent/new?lease=${row.lease_id}&month=${monthLabel(row.month)}`}

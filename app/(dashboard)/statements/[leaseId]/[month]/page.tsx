@@ -4,7 +4,7 @@ import { PrintButton } from "@/components/print-button";
 import { requireOrganization } from "@/lib/auth";
 import { BILL_TYPE_LABELS, EXPENSE_CATEGORY_LABELS, label } from "@/lib/labels";
 import { formatMoney } from "@/lib/money";
-import { buildStatement } from "@/lib/statement";
+import { buildStatement, type Statement } from "@/lib/statement";
 import { SendStatementButton } from "../../send-button";
 
 function lineLabel(key: string) {
@@ -37,13 +37,15 @@ export default async function StatementPage({
     .eq("status", "sent")
     .maybeSingle();
 
+  const billLines = statement.lines.map((line) => ({
+    label: lineLabel(line.label),
+    detail: line.detail,
+    amount: line.amount,
+  }));
+
   const rows: { label: string; detail: string | null; amount: string }[] = [
     { label: "Наем", detail: null, amount: statement.rentDue },
-    ...statement.lines.map((line) => ({
-      label: lineLabel(line.label),
-      detail: line.detail,
-      amount: line.amount,
-    })),
+    ...billLines,
   ];
 
   return (
@@ -77,6 +79,9 @@ export default async function StatementPage({
           <span className="block text-neutral-500">Срок за плащане: {statement.dueDate}</span>
         </p>
 
+        {statement.split ? (
+          <SplitTotals statement={statement} lines={billLines} />
+        ) : (
         <table className="mt-5 w-full text-sm">
           <tbody className="divide-y divide-neutral-200">
             {rows.map((row, index) => (
@@ -116,6 +121,8 @@ export default async function StatementPage({
           </tfoot>
         </table>
 
+        )}
+
         {statement.paid !== "0.00" && (
           <p className="mt-3 text-sm text-neutral-500">
             Отбелязано като платено за този месец:{" "}
@@ -141,5 +148,69 @@ export default async function StatementPage({
         )}
       </div>
     </div>
+  );
+}
+
+// A lease settled as two streams gets two sections and two totals, so the
+// tenant sees that being ahead on rent does not clear an unpaid bill.
+function SplitTotals({
+  statement,
+  lines,
+}: {
+  statement: Statement;
+  lines: { label: string; detail: string | null; amount: string }[];
+}) {
+  const section = (
+    title: string,
+    rows: { label: string; detail: string | null; amount: string }[],
+    balanceBefore: string,
+    total: string,
+  ) => (
+    <div className="mt-5">
+      <h2 className="text-sm font-semibold">{title}</h2>
+      <table className="mt-1 w-full text-sm">
+        <tbody className="divide-y divide-neutral-200">
+          {rows.map((row, index) => (
+            <tr key={`${row.label}-${index}`}>
+              <td className="py-2">
+                {row.label}
+                {row.detail && <span className="block text-xs text-neutral-500">{row.detail}</span>}
+              </td>
+              <td className="py-2 text-right whitespace-nowrap">
+                {formatMoney(row.amount, statement.currency)}
+              </td>
+            </tr>
+          ))}
+          {balanceBefore !== "0.00" && (
+            <tr>
+              <td className="py-2">
+                {balanceBefore.startsWith("-") ? "От предходен месец" : "Надплатено от предходен месец"}
+              </td>
+              <td className="py-2 text-right whitespace-nowrap">
+                {formatMoney(balanceBefore.replace("-", ""), statement.currency)}
+              </td>
+            </tr>
+          )}
+          <tr className="border-t-2 border-neutral-900">
+            <td className="py-2 font-semibold">За плащане</td>
+            <td className="py-2 text-right font-semibold whitespace-nowrap">
+              {formatMoney(total, statement.currency)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
+  return (
+    <>
+      {section(
+        "Наем",
+        [{ label: "Наем за месеца", detail: null, amount: statement.rentDue }],
+        statement.rentBalanceBefore,
+        statement.rentTotalDue,
+      )}
+      {section("Сметки", lines, statement.billsBalanceBefore, statement.billsTotalDue)}
+    </>
   );
 }

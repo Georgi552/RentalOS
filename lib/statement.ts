@@ -23,6 +23,13 @@ export type Statement = {
   balanceBefore: string;
   // What the tenant owes now: this month's charges plus anything carried over.
   totalDue: string;
+  // A lease where rent and bills are settled separately gets two of everything,
+  // because one total would let a rent credit hide an unpaid bill.
+  split: boolean;
+  rentBalanceBefore: string;
+  billsBalanceBefore: string;
+  rentTotalDue: string;
+  billsTotalDue: string;
   paid: string;
   dueDate: string;
   lines: StatementLine[];
@@ -45,7 +52,7 @@ export async function buildStatement(
   const { data: ledger, error: ledgerError } = await supabase
     .from("lease_monthly_ledger")
     .select(
-      "lease_id, month, currency, rent_due::text, bills_due::text, expenses_due::text, charges::text, due_date, is_due, paid::text, balance::text",
+      "lease_id, month, currency, rent_due::text, bills_due::text, expenses_due::text, bills_and_expenses_due::text, charges::text, due_date, is_due, paid::text, balance::text, rent_balance::text, bills_balance::text, split_rent_and_bills",
     )
     .eq("organization_id", organizationId)
     .eq("lease_id", leaseId)
@@ -61,9 +68,13 @@ export async function buildStatement(
     rent_due: string;
     bills_due: string;
     expenses_due: string;
+    bills_and_expenses_due: string;
     charges: string;
     paid: string;
     balance: string;
+    rent_balance: string;
+    bills_balance: string;
+    split_rent_and_bills: boolean;
   }[];
 
   const current = rows.find((row) => row.month.slice(0, 7) === month);
@@ -71,6 +82,8 @@ export async function buildStatement(
 
   const previous = rows.find((row) => row.month.slice(0, 7) !== month);
   const balanceBefore = previous?.balance ?? "0.00";
+  const rentBalanceBefore = previous?.rent_balance ?? "0.00";
+  const billsBalanceBefore = previous?.bills_balance ?? "0.00";
 
   const { data: lease, error: leaseError } = await supabase
     .from("leases")
@@ -152,6 +165,11 @@ export async function buildStatement(
     charges: current.charges,
     balanceBefore,
     totalDue: addMoney(current.charges, negate(balanceBefore)),
+    split: current.split_rent_and_bills,
+    rentBalanceBefore,
+    billsBalanceBefore,
+    rentTotalDue: addMoney(current.rent_due, negate(rentBalanceBefore)),
+    billsTotalDue: addMoney(current.bills_and_expenses_due, negate(billsBalanceBefore)),
     paid: current.paid,
     dueDate: `${month}-${String(context.rent_due_day).padStart(2, "0")}`,
     lines: [

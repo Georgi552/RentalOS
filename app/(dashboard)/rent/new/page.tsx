@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { requireOrganization } from "@/lib/auth";
 import type { LedgerRow } from "@/lib/ledger";
+import { formatMoney } from "@/lib/money";
 import { tenantName } from "@/lib/types";
 import { recordPayment } from "../actions";
 import { PaymentForm } from "../payment-form";
 
 type LeaseOption = {
   id: string;
+  split_rent_and_bills: boolean;
   property: { name: string } | null;
   tenant: { first_name: string; last_name: string } | null;
 };
@@ -20,7 +22,7 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
 
   const { data: leaseData, error: leaseError } = await supabase
     .from("leases")
-    .select("id, property:properties(name), tenant:tenants(first_name, last_name)")
+    .select("id, split_rent_and_bills, property:properties(name), tenant:tenants(first_name, last_name)")
     .eq("organization_id", organizationId)
     .in("status", ["active", "ended"])
     .order("start_date", { ascending: false });
@@ -44,12 +46,15 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
     currency: string;
   } | undefined;
   let existingPaid = "";
+  let existingRent = "";
+  let existingBills = "";
+  let split: { rentBalance: string; billsBalance: string } | undefined;
 
   if (leaseId && /^\d{4}-\d{2}$/.test(periodMonth)) {
     const { data: ledger } = await supabase
       .from("lease_monthly_ledger")
       .select(
-        "month, currency, rent_due::text, bills_due::text, expenses_due::text, charges::text, charges_due::text, due_date, is_due, paid::text, balance::text",
+        "month, currency, rent_due::text, bills_due::text, expenses_due::text, charges::text, charges_due::text, due_date, is_due, paid::text, paid_rent::text, paid_bills::text, rent_balance::text, bills_balance::text, split_rent_and_bills, balance::text",
       )
       .eq("organization_id", organizationId)
       .eq("lease_id", leaseId)
@@ -63,6 +68,23 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
 
     if (current) {
       existingPaid = current.paid;
+      existingRent = current.paid_rent;
+      existingBills = current.paid_bills;
+
+      if (current.split_rent_and_bills) {
+        // Balances carried in from the month before, so the landlord can see
+        // what each stream stands at while allocating.
+        split = {
+          rentBalance: formatMoney(
+            (previous?.rent_balance ?? "0.00").replace("-", ""),
+            current.currency,
+          ) + (previous?.rent_balance?.startsWith("-") ? " дълг" : " кредит"),
+          billsBalance: formatMoney(
+            (previous?.bills_balance ?? "0.00").replace("-", ""),
+            current.currency,
+          ) + (previous?.bills_balance?.startsWith("-") ? " дълг" : " кредит"),
+        };
+      }
       due = {
         charges: current.charges,
         rent: current.rent_due,
@@ -99,8 +121,11 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
             lease_id: leaseId,
             period_month: periodMonth,
             paid_amount: existingPaid || undefined,
+            paid_rent: existingRent || undefined,
+            paid_bills: existingBills || undefined,
           }}
           due={due}
+          split={split}
           submitLabel="Запази плащането"
           cancelHref="/rent"
         />

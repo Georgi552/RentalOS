@@ -126,6 +126,29 @@ export function LeaseForm({
         hint="Само един договор за имот може да е активен"
       />
 
+      <label className="flex items-start gap-3 rounded-md border border-neutral-200 px-3 py-3">
+        <input
+          type="checkbox"
+          name="split_rent_and_bills"
+          defaultChecked={
+            state.values
+              ? state.values.split_rent_and_bills === "on"
+              : Boolean(lease?.split_rent_and_bills)
+          }
+          className="mt-0.5"
+        />
+        <span>
+          <span className="block text-sm font-medium">
+            Наемът и сметките се плащат отделно
+          </span>
+          <span className="block text-xs text-neutral-500">
+            За наемател, който плаща наема авансово, а сметките всеки месец.
+            Всяко от двете получава свой баланс, така че платеното за наем не
+            покрива тихо неплатена сметка.
+          </span>
+        </span>
+      </label>
+
       <BillTermsFields
         values={state.values ?? billTermValues ?? {}}
         errors={state.billTermErrors ?? {}}

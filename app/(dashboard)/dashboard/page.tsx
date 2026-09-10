@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const { data, error } = await supabase
     .from("lease_monthly_ledger")
     .select(
-      "lease_id, property_id, month, currency, rent_due::text, bills_electricity::text, bills_water::text, bills_heating::text, bills_building_fee::text, bills_internet::text, bills_other::text, expenses_due::text, charges::text, charges_due::text, due_date, is_due, paid::text, balance::text, property:properties(id, name), tenant:tenants(id, first_name, last_name)",
+      "lease_id, property_id, month, currency, rent_due::text, bills_electricity::text, bills_water::text, bills_heating::text, bills_building_fee::text, bills_internet::text, bills_other::text, expenses_due::text, charges::text, charges_due::text, bills_and_expenses_due::text, due_date, is_due, paid::text, paid_rent::text, paid_bills::text, rent_balance::text, bills_balance::text, split_rent_and_bills, balance::text, property:properties(id, name), tenant:tenants(id, first_name, last_name)",
     )
     .eq("organization_id", organizationId)
     .gte("month", firstOfMonthsAgo(MONTHS_SHOWN))
@@ -109,12 +109,40 @@ export default async function DashboardPage() {
                   <p className="text-xs text-neutral-500">
                     Текущ баланс · {current.month.slice(0, 7)}
                   </p>
-                  <p className={`text-2xl font-semibold ${balanceTone(current.balance)}`}>
-                    {formatMoney(current.balance.replace("-", ""), current.currency)}
-                  </p>
-                  <p className={`text-xs ${balanceTone(current.balance)}`}>
-                    {balanceNote(current.balance)}
-                  </p>
+
+                  {current.split_rent_and_bills ? (
+                    // Two agreements, two balances. One number would hide a
+                    // rent credit sitting on top of an unpaid bill.
+                    <div className="mt-1 space-y-1">
+                      <p>
+                        <span className="text-xs text-neutral-500">Наем </span>
+                        <span className={`text-xl font-semibold ${balanceTone(current.rent_balance)}`}>
+                          {formatMoney(current.rent_balance.replace("-", ""), current.currency)}
+                        </span>
+                        <span className={`ml-1 text-xs ${balanceTone(current.rent_balance)}`}>
+                          {balanceNote(current.rent_balance)}
+                        </span>
+                      </p>
+                      <p>
+                        <span className="text-xs text-neutral-500">Сметки </span>
+                        <span className={`text-xl font-semibold ${balanceTone(current.bills_balance)}`}>
+                          {formatMoney(current.bills_balance.replace("-", ""), current.currency)}
+                        </span>
+                        <span className={`ml-1 text-xs ${balanceTone(current.bills_balance)}`}>
+                          {balanceNote(current.bills_balance)}
+                        </span>
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className={`text-2xl font-semibold ${balanceTone(current.balance)}`}>
+                        {formatMoney(current.balance.replace("-", ""), current.currency)}
+                      </p>
+                      <p className={`text-xs ${balanceTone(current.balance)}`}>
+                        {balanceNote(current.balance)}
+                      </p>
+                    </>
+                  )}
                   {!latest.is_due && latest.charges !== "0.00" && (
                     <p className="mt-1 text-xs text-neutral-500">
                       {formatMoney(latest.charges, latest.currency)}{" "}

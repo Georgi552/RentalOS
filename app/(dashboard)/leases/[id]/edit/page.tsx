@@ -14,7 +14,7 @@ export default async function EditLeasePage({ params }: PageProps<"/leases/[id]/
   const { data, error } = await supabase
     .from("leases")
     .select(
-      "id, organization_id, property_id, tenant_id, start_date, end_date, monthly_rent::text, deposit::text, currency, rent_due_day, status, notes, created_at, updated_at",
+      "id, organization_id, property_id, tenant_id, start_date, end_date, monthly_rent::text, deposit::text, currency, rent_due_day, status, split_rent_and_bills, notes, created_at, updated_at",
     )
     .eq("id", id)
     .eq("organization_id", organizationId)

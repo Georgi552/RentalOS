@@ -27,6 +27,9 @@ export function statementHtml(statement: Statement) {
       </td>
     </tr>`;
 
+  const section = (title: string, body: string) =>
+    `<tr><td colspan="2" style="padding:14px 0 4px;font-weight:600;font-size:15px">${escapeHtml(title)}</td></tr>${body}`;
+
   const carried =
     statement.balanceBefore === "0.00"
       ? ""
@@ -54,15 +57,20 @@ export function statementHtml(statement: Statement) {
       </p>
 
       <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:14px">
-        ${row("Наем", null, statement.rentDue)}
-        ${statement.lines.map((line) => row(lineLabel(line.label), line.detail, line.amount)).join("")}
-        ${carried}
-        <tr>
-          <td style="padding:10px 0 0;font-weight:600;font-size:16px">За плащане</td>
-          <td style="padding:10px 0 0;text-align:right;font-weight:600;font-size:16px;white-space:nowrap">
-            ${escapeHtml(formatMoney(statement.totalDue, statement.currency))}
-          </td>
-        </tr>
+        ${
+          statement.split
+            ? section("Наем", row("Наем за месеца", null, statement.rentDue) +
+                carriedRow(statement, statement.rentBalanceBefore) +
+                totalRow(statement, statement.rentTotalDue)) +
+              section("Сметки",
+                statement.lines.map((line) => row(lineLabel(line.label), line.detail, line.amount)).join("") +
+                carriedRow(statement, statement.billsBalanceBefore) +
+                totalRow(statement, statement.billsTotalDue))
+            : row("Наем", null, statement.rentDue) +
+              statement.lines.map((line) => row(lineLabel(line.label), line.detail, line.amount)).join("") +
+              carried +
+              totalRow(statement, statement.totalDue)
+        }
       </table>
 
       <p style="margin:22px 0 0;color:#898781;font-size:12px">
@@ -73,7 +81,54 @@ export function statementHtml(statement: Statement) {
 </body></html>`;
 }
 
+function carriedRow(statement: Statement, balance: string) {
+  if (balance === "0.00") return "";
+  const label = balance.startsWith("-")
+    ? "От предходен месец"
+    : "Надплатено от предходен месец";
+  return `<tr>
+      <td style="padding:6px 0;border-bottom:1px solid #e1e0d9">${label}</td>
+      <td style="padding:6px 0;border-bottom:1px solid #e1e0d9;text-align:right;white-space:nowrap">
+        ${escapeHtml(formatMoney(balance.replace("-", ""), statement.currency))}
+      </td>
+    </tr>`;
+}
+
+function totalRow(statement: Statement, total: string) {
+  return `<tr>
+      <td style="padding:10px 0 0;font-weight:600;font-size:16px">За плащане</td>
+      <td style="padding:10px 0 0;text-align:right;font-weight:600;font-size:16px;white-space:nowrap">
+        ${escapeHtml(formatMoney(total, statement.currency))}
+      </td>
+    </tr>`;
+}
+
 export function statementText(statement: Statement) {
+  if (statement.split) {
+    const lines = [
+      statement.organizationName,
+      `Справка за ${statement.month} — ${statement.propertyName}`,
+      "",
+      `Здравейте, ${statement.tenantName},`,
+      `Срок за плащане: ${statement.dueDate}`,
+      "",
+      "НАЕМ",
+      `Наем за месеца: ${formatMoney(statement.rentDue, statement.currency)}`,
+    ];
+    if (statement.rentBalanceBefore !== "0.00") {
+      lines.push(`${statement.rentBalanceBefore.startsWith("-") ? "От предходен месец" : "Надплатено от предходен месец"}: ${formatMoney(statement.rentBalanceBefore.replace("-", ""), statement.currency)}`);
+    }
+    lines.push(`За плащане по наем: ${formatMoney(statement.rentTotalDue, statement.currency)}`, "", "СМЕТКИ");
+    for (const line of statement.lines) {
+      lines.push(`${lineLabel(line.label)}${line.detail ? ` (${line.detail})` : ""}: ${formatMoney(line.amount, statement.currency)}`);
+    }
+    if (statement.billsBalanceBefore !== "0.00") {
+      lines.push(`${statement.billsBalanceBefore.startsWith("-") ? "От предходен месец" : "Надплатено от предходен месец"}: ${formatMoney(statement.billsBalanceBefore.replace("-", ""), statement.currency)}`);
+    }
+    lines.push(`За плащане по сметки: ${formatMoney(statement.billsTotalDue, statement.currency)}`);
+    return lines.join("\n");
+  }
+
   const lines = [
     `${statement.organizationName}`,
     `Справка за ${statement.month} — ${statement.propertyName}`,

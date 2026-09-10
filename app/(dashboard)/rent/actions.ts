@@ -35,6 +35,8 @@ export async function recordPayment(
     lease_id: text(formData, "lease_id"),
     period_month: text(formData, "period_month"),
     paid_amount: text(formData, "paid_amount"),
+    paid_rent: text(formData, "paid_rent"),
+    paid_bills: text(formData, "paid_bills"),
     payment_date: text(formData, "payment_date"),
     notes: text(formData, "notes"),
   };
@@ -45,29 +47,47 @@ export async function recordPayment(
   if (!values.period_month) fieldErrors.period_month = "Избери месец.";
   else if (!isMonth(values.period_month)) fieldErrors.period_month = "Използвай формат 2026-08.";
 
-  const paid = parseMoney(values.paid_amount, "Платената сума");
-  if (!paid.ok) fieldErrors.paid_amount = paid.error;
 
   if (values.payment_date && !isDate(values.payment_date)) {
     fieldErrors.payment_date = "Въведи валидна дата.";
   }
 
-  if (Object.keys(fieldErrors).length > 0 || !paid.ok) {
+  if (Object.keys(fieldErrors).length > 0) {
     return { fieldErrors, values };
   }
 
   const { supabase, organizationId } = await requireOrganization();
 
-  // Currency follows the lease so a payment can never disagree with it.
+  // Currency and the split follow the lease, so a payment can never disagree
+  // with the agreement it belongs to.
   const { data: lease, error: leaseError } = await supabase
     .from("leases")
-    .select("currency")
+    .select("currency, split_rent_and_bills")
     .eq("id", values.lease_id)
     .eq("organization_id", organizationId)
     .maybeSingle();
 
   if (leaseError) return { error: leaseError.message, values };
   if (!lease) return { error: "Този договор вече не съществува.", values };
+
+  // A split lease keeps the two streams apart; anything else is one amount,
+  // which the ledger treats as the whole payment.
+  let paidRent: string;
+  let paidBills: string;
+
+  if (lease.split_rent_and_bills) {
+    const rent = parseMoney(values.paid_rent || "0", "Платеното за наем");
+    const bills = parseMoney(values.paid_bills || "0", "Платеното за сметки");
+    if (!rent.ok) return { fieldErrors: { paid_rent: rent.error }, values };
+    if (!bills.ok) return { fieldErrors: { paid_bills: bills.error }, values };
+    paidRent = rent.value;
+    paidBills = bills.value;
+  } else {
+    const paid = parseMoney(values.paid_amount, "Платената сума");
+    if (!paid.ok) return { fieldErrors: { paid_amount: paid.error }, values };
+    paidRent = paid.value;
+    paidBills = "0.00";
+  }
 
   // One record per lease per month, so re-entering a month corrects it
   // instead of double counting.
@@ -76,7 +96,8 @@ export async function recordPayment(
       organization_id: organizationId,
       lease_id: values.lease_id,
       period_month: `${values.period_month}-01`,
-      paid_amount: paid.value,
+      paid_rent: paidRent,
+      paid_bills: paidBills,
       currency: lease.currency,
       payment_date: values.payment_date || null,
       notes: values.notes || null,

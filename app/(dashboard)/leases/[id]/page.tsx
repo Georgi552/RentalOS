@@ -23,6 +23,7 @@ type LeaseDetail = {
   currency: string;
   rent_due_day: number;
   status: string;
+  split_rent_and_bills: boolean;
   notes: string | null;
   property: { id: string; name: string } | null;
   tenant: { id: string; first_name: string; last_name: string } | null;
@@ -39,7 +40,7 @@ export default async function LeasePage({
   const { data, error } = await supabase
     .from("leases")
     .select(
-      "id, property_id, tenant_id, start_date, end_date, monthly_rent::text, deposit::text, currency, rent_due_day, status, notes, property:properties(id, name), tenant:tenants(id, first_name, last_name)",
+      "id, property_id, tenant_id, start_date, end_date, monthly_rent::text, deposit::text, currency, rent_due_day, status, split_rent_and_bills, notes, property:properties(id, name), tenant:tenants(id, first_name, last_name)",
     )
     .eq("id", id)
     .eq("organization_id", organizationId)
@@ -130,6 +131,10 @@ export default async function LeasePage({
           ["Месечен наем", formatMoney(lease.monthly_rent, lease.currency)],
           ["Депозит", lease.deposit ? formatMoney(lease.deposit, lease.currency) : null],
           ["Ден за плащане", String(lease.rent_due_day)],
+    [
+      "Плащане",
+      lease.split_rent_and_bills ? "Наемът и сметките се плащат отделно" : null,
+    ],
           ["Бележки", lease.notes],
         ].map(([label, value]) => (
           <div key={label} className="flex gap-4 py-2">

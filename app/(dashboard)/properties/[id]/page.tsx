@@ -93,7 +93,7 @@ export default async function PropertyPage({
   const { data: ledgerData, error: ledgerError } = await supabase
     .from("lease_monthly_ledger")
     .select(
-      "lease_id, property_id, tenant_id, currency, month, payment_id, rent_due::text, bills_due::text, expenses_due::text, charges::text, charges_due::text, due_date, is_due, paid::text, month_delta::text, balance::text",
+      "lease_id, property_id, tenant_id, currency, month, payment_id, rent_due::text, bills_due::text, expenses_due::text, charges::text, charges_due::text, bills_and_expenses_due::text, due_date, is_due, paid::text, paid_rent::text, paid_bills::text, rent_balance::text, bills_balance::text, split_rent_and_bills, month_delta::text, balance::text",
     )
     .eq("property_id", id)
     .eq("organization_id", organizationId)
@@ -103,6 +103,7 @@ export default async function PropertyPage({
   if (ledgerError) throw new Error(`Не мога да заредя баланса: ${ledgerError.message}`);
 
   const ledger = (ledgerData ?? []) as unknown as LedgerRow[];
+  const splitLedger = ledger.some((row) => row.split_rent_and_bills);
 
   return (
     <div>
@@ -195,7 +196,14 @@ export default async function PropertyPage({
                 <th className="px-4 py-2 text-right font-medium">Сметки</th>
                 <th className="px-4 py-2 text-right font-medium">Начислено</th>
                 <th className="px-4 py-2 text-right font-medium">Платено</th>
-                <th className="px-4 py-2 text-right font-medium">Баланс</th>
+                {splitLedger ? (
+                  <>
+                    <th className="px-4 py-2 text-right font-medium">Баланс наем</th>
+                    <th className="px-4 py-2 text-right font-medium">Баланс сметки</th>
+                  </>
+                ) : (
+                  <th className="px-4 py-2 text-right font-medium">Баланс</th>
+                )}
                 <th className="no-print px-4 py-2" />
               </tr>
             </thead>
@@ -225,12 +233,33 @@ export default async function PropertyPage({
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     {formatMoney(row.paid, row.currency)}
                   </td>
-                  <td
-                    className={`px-4 py-2 text-right font-medium whitespace-nowrap ${balanceTone(row.balance)}`}
-                  >
-                    {formatMoney(row.balance.replace("-", ""), row.currency)}
-                    <span className="block text-xs font-normal">{balanceNote(row.balance)}</span>
-                  </td>
+                  {splitLedger ? (
+                    <>
+                      <td
+                        className={`px-4 py-2 text-right font-medium whitespace-nowrap ${balanceTone(row.rent_balance)}`}
+                      >
+                        {formatMoney(row.rent_balance.replace("-", ""), row.currency)}
+                        <span className="block text-xs font-normal">
+                          {balanceNote(row.rent_balance)}
+                        </span>
+                      </td>
+                      <td
+                        className={`px-4 py-2 text-right font-medium whitespace-nowrap ${balanceTone(row.bills_balance)}`}
+                      >
+                        {formatMoney(row.bills_balance.replace("-", ""), row.currency)}
+                        <span className="block text-xs font-normal">
+                          {balanceNote(row.bills_balance)}
+                        </span>
+                      </td>
+                    </>
+                  ) : (
+                    <td
+                      className={`px-4 py-2 text-right font-medium whitespace-nowrap ${balanceTone(row.balance)}`}
+                    >
+                      {formatMoney(row.balance.replace("-", ""), row.currency)}
+                      <span className="block text-xs font-normal">{balanceNote(row.balance)}</span>
+                    </td>
+                  )}
                   <td className="no-print px-4 py-2 text-right whitespace-nowrap">
                     <Link
                       href={`/rent/new?lease=${row.lease_id}&month=${monthLabel(row.month)}`}

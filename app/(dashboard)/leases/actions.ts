@@ -38,6 +38,7 @@ function parse(formData: FormData) {
     currency: text(formData, "currency") || "EUR",
     rent_due_day: text(formData, "rent_due_day") || "1",
     status: text(formData, "status") || "active",
+    split_rent_and_bills: formData.get("split_rent_and_bills") ? "on" : "",
     notes: text(formData, "notes"),
   };
 
@@ -100,6 +101,7 @@ function parse(formData: FormData) {
       currency: values.currency,
       rent_due_day: dueDay,
       status: values.status,
+      split_rent_and_bills: values.split_rent_and_bills === "on",
       notes: values.notes || null,
     },
     terms: billTerms.terms,

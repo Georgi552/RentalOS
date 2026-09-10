@@ -17,6 +17,12 @@ export type LedgerRow = {
   due_date: string;
   is_due: boolean;
   paid: string;
+  paid_rent: string;
+  paid_bills: string;
+  rent_balance: string;
+  bills_balance: string;
+  bills_and_expenses_due: string;
+  split_rent_and_bills: boolean;
   month_delta: string;
   // Negative means the tenant still owes; positive is credit carried forward.
   balance: string;

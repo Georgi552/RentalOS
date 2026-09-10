@@ -38,6 +38,7 @@ export type Lease = {
   currency: string;
   rent_due_day: number;
   status: LeaseStatus;
+  split_rent_and_bills: boolean;
   notes: string | null;
   created_at: string;
   updated_at: string;
