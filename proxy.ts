@@ -56,6 +56,16 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // api/ is excluded on purpose. Those endpoints are called by machines, not
+    // browsers, so they carry no session cookie: gating them here bounced
+    // Vercel's cron to /login with a 307 and the daily statements never ran.
+    //
+    // Anything added under /api MUST authenticate itself. /api/cron/statements
+    // checks the Authorization header against CRON_SECRET and refuses to run
+    // when the secret is unset.
+    //
+    // Route handlers that do need a session live outside /api - the document
+    // download and the CSV export - and stay behind this proxy.
+    "/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
