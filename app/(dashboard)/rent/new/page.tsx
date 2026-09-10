@@ -34,6 +34,7 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
     label: `${row.property?.name ?? "Непознат имот"} — ${
       row.tenant ? tenantName(row.tenant) : "Непознат наемател"
     }`,
+    split: row.split_rent_and_bills,
   }));
 
   // When a month is known, show what the ledger says is owed before it is paid.

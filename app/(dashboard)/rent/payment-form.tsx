@@ -1,9 +1,17 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Field, FormError, SelectField, SubmitRow, TextAreaField } from "@/components/form";
 import { formatMoney } from "@/lib/money";
 import type { PaymentFormState } from "./actions";
+
+export type LeaseChoice = {
+  value: string;
+  label: string;
+  // Whether this lease settles rent and bills separately. Carried per lease
+  // because the form only learns which one is meant once it is picked.
+  split: boolean;
+};
 
 export function PaymentForm({
   action,
@@ -15,7 +23,7 @@ export function PaymentForm({
   cancelHref,
 }: {
   action: (state: PaymentFormState, formData: FormData) => Promise<PaymentFormState>;
-  leases: { value: string; label: string }[];
+  leases: LeaseChoice[];
   defaults?: {
     lease_id?: string;
     period_month?: string;
@@ -26,7 +34,7 @@ export function PaymentForm({
   };
   // What the ledger says is owed for the chosen month, when it is known.
   due?: { charges: string; rent: string; bills: string; expenses: string; balanceBefore: string; currency: string };
-  // A split lease settles two streams, so a payment has to say which it is.
+  // Balances for the lease arrived at through a link, shown beside the choice.
   split?: { rentBalance: string; billsBalance: string; kind: string };
   submitLabel: string;
   cancelHref: string;
@@ -35,6 +43,13 @@ export function PaymentForm({
 
   const value = (key: string, fallback = "") =>
     state.values?.[key] ?? (defaults as Record<string, string> | undefined)?.[key] ?? fallback;
+
+  // The lease drives whether a kind is needed, and it can be chosen here, so
+  // the answer cannot be settled on the server before the form is drawn.
+  const [leaseId, setLeaseId] = useState(value("lease_id"));
+  const needsKind = leases
+    ? (leases.find((option) => option.value === leaseId)?.split ?? false)
+    : Boolean(split);
 
   return (
     <form action={formAction} className="mt-6 max-w-lg space-y-4">
@@ -74,7 +89,8 @@ export function PaymentForm({
         label="Договор"
         name="lease_id"
         required
-        defaultValue={value("lease_id")}
+        value={leaseId}
+        onChange={setLeaseId}
         error={state.fieldErrors?.lease_id}
         options={leases}
         placeholder="Избери договор"
@@ -100,16 +116,16 @@ export function PaymentForm({
         />
       </div>
 
-      {split && (
+      {needsKind && (
         <SelectField
           label="За какво е плащането"
           name="kind"
           required
-          defaultValue={value("kind", split.kind)}
+          defaultValue={value("kind", split?.kind ?? "")}
           error={state.fieldErrors?.kind}
           options={[
-            { value: "rent", label: `Наем — баланс ${split.rentBalance}` },
-            { value: "bills", label: `Сметки — баланс ${split.billsBalance}` },
+            { value: "rent", label: split ? `Наем — баланс ${split.rentBalance}` : "Наем" },
+            { value: "bills", label: split ? `Сметки — баланс ${split.billsBalance}` : "Сметки" },
           ]}
           placeholder="Избери"
           hint="По този договор наемът и сметките имат отделни баланси"
