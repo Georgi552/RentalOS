@@ -108,12 +108,31 @@ export default async function RentPage({ searchParams }: PageProps<"/rent">) {
                     </td>
                   )}
                   <td className="px-4 py-2 text-right whitespace-nowrap">
-                    <Link
-                      href={`/rent/new?lease=${row.lease_id}&month=${monthLabel(row.month)}`}
-                      className="text-sm font-medium text-neutral-900 hover:underline"
-                    >
-                      {row.payment_id ? "Промени" : "Отбележи"}
-                    </Link>
+                    {row.split_rent_and_bills ? (
+                      // Two balances, so two entry points: one link would leave the
+                      // landlord guessing which stream they were about to touch.
+                      <span className="flex justify-end gap-3">
+                        <Link
+                          href={`/rent/new?lease=${row.lease_id}&month=${monthLabel(row.month)}&kind=rent`}
+                          className="text-sm font-medium text-neutral-900 hover:underline"
+                        >
+                          Наем
+                        </Link>
+                        <Link
+                          href={`/rent/new?lease=${row.lease_id}&month=${monthLabel(row.month)}&kind=bills`}
+                          className="text-sm font-medium text-neutral-900 hover:underline"
+                        >
+                          Сметки
+                        </Link>
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/rent/new?lease=${row.lease_id}&month=${monthLabel(row.month)}`}
+                        className="text-sm font-medium text-neutral-900 hover:underline"
+                      >
+                        {row.payment_id ? "Промени" : "Отбележи"}
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}

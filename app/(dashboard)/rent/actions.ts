@@ -35,8 +35,7 @@ export async function recordPayment(
     lease_id: text(formData, "lease_id"),
     period_month: text(formData, "period_month"),
     paid_amount: text(formData, "paid_amount"),
-    paid_rent: text(formData, "paid_rent"),
-    paid_bills: text(formData, "paid_bills"),
+    kind: text(formData, "kind"),
     payment_date: text(formData, "payment_date"),
     notes: text(formData, "notes"),
   };
@@ -70,39 +69,31 @@ export async function recordPayment(
   if (leaseError) return { error: leaseError.message, values };
   if (!lease) return { error: "Този договор вече не съществува.", values };
 
-  // A split lease keeps the two streams apart; anything else is one amount,
-  // which the ledger treats as the whole payment.
-  let paidRent: string;
-  let paidBills: string;
+  // A split lease needs to know which stream the money is for. Without it the
+  // payment would land on one balance and quietly leave the other short.
+  const kind = lease.split_rent_and_bills ? values.kind : "combined";
 
-  if (lease.split_rent_and_bills) {
-    const rent = parseMoney(values.paid_rent || "0", "Платеното за наем");
-    const bills = parseMoney(values.paid_bills || "0", "Платеното за сметки");
-    if (!rent.ok) return { fieldErrors: { paid_rent: rent.error }, values };
-    if (!bills.ok) return { fieldErrors: { paid_bills: bills.error }, values };
-    paidRent = rent.value;
-    paidBills = bills.value;
-  } else {
-    const paid = parseMoney(values.paid_amount, "Платената сума");
-    if (!paid.ok) return { fieldErrors: { paid_amount: paid.error }, values };
-    paidRent = paid.value;
-    paidBills = "0.00";
+  if (lease.split_rent_and_bills && kind !== "rent" && kind !== "bills") {
+    return { fieldErrors: { kind: "Избери за какво е плащането." }, values };
   }
 
-  // One record per lease per month, so re-entering a month corrects it
-  // instead of double counting.
+  const paid = parseMoney(values.paid_amount, "Платената сума");
+  if (!paid.ok) return { fieldErrors: { paid_amount: paid.error }, values };
+
+  // One record per kind per month, so re-entering corrects that one payment
+  // and cannot touch the other stream.
   const { error } = await supabase.from("rent_payments").upsert(
     {
       organization_id: organizationId,
       lease_id: values.lease_id,
       period_month: `${values.period_month}-01`,
-      paid_rent: paidRent,
-      paid_bills: paidBills,
+      kind,
+      paid_amount: paid.value,
       currency: lease.currency,
       payment_date: values.payment_date || null,
       notes: values.notes || null,
     },
-    { onConflict: "lease_id,period_month" },
+    { onConflict: "lease_id,period_month,kind" },
   );
 
   if (error) return { error: error.message, values };

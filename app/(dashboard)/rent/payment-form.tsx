@@ -20,15 +20,14 @@ export function PaymentForm({
     lease_id?: string;
     period_month?: string;
     paid_amount?: string;
-    paid_rent?: string;
-    paid_bills?: string;
+    kind?: string;
     payment_date?: string;
     notes?: string;
   };
   // What the ledger says is owed for the chosen month, when it is known.
   due?: { charges: string; rent: string; bills: string; expenses: string; balanceBefore: string; currency: string };
-  // A split lease is settled as two amounts, each against its own balance.
-  split?: { rentBalance: string; billsBalance: string };
+  // A split lease settles two streams, so a payment has to say which it is.
+  split?: { rentBalance: string; billsBalance: string; kind: string };
   submitLabel: string;
   cancelHref: string;
 }) {
@@ -91,35 +90,30 @@ export function PaymentForm({
           hint="Формат: 2026-08"
           maxLength={7}
         />
-        {!split && (
-          <Field
-            label="Платена сума"
-            name="paid_amount"
-            required
-            defaultValue={value("paid_amount", "0")}
-            error={state.fieldErrors?.paid_amount}
-            hint="Колко е платил наемателят"
-          />
-        )}
+        <Field
+          label="Платена сума"
+          name="paid_amount"
+          required
+          defaultValue={value("paid_amount", "0")}
+          error={state.fieldErrors?.paid_amount}
+          hint="Колко е платил наемателят"
+        />
       </div>
 
       {split && (
-        <div className="grid grid-cols-2 gap-4">
-          <Field
-            label="Платено за наем"
-            name="paid_rent"
-            defaultValue={value("paid_rent", "0")}
-            error={state.fieldErrors?.paid_rent}
-            hint={`Баланс по наем: ${split.rentBalance}`}
-          />
-          <Field
-            label="Платено за сметки"
-            name="paid_bills"
-            defaultValue={value("paid_bills", "0")}
-            error={state.fieldErrors?.paid_bills}
-            hint={`Баланс по сметки: ${split.billsBalance}`}
-          />
-        </div>
+        <SelectField
+          label="За какво е плащането"
+          name="kind"
+          required
+          defaultValue={value("kind", split.kind)}
+          error={state.fieldErrors?.kind}
+          options={[
+            { value: "rent", label: `Наем — баланс ${split.rentBalance}` },
+            { value: "bills", label: `Сметки — баланс ${split.billsBalance}` },
+          ]}
+          placeholder="Избери"
+          hint="По този договор наемът и сметките имат отделни баланси"
+        />
       )}
 
       <Field

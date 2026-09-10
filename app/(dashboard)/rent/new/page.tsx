@@ -14,7 +14,7 @@ type LeaseOption = {
 };
 
 export default async function RecordPaymentPage({ searchParams }: PageProps<"/rent/new">) {
-  const { lease, month } = await searchParams;
+  const { lease, month, kind } = await searchParams;
   const leaseId = typeof lease === "string" ? lease : "";
   const periodMonth = typeof month === "string" ? month : "";
 
@@ -46,9 +46,7 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
     currency: string;
   } | undefined;
   let existingPaid = "";
-  let existingRent = "";
-  let existingBills = "";
-  let split: { rentBalance: string; billsBalance: string } | undefined;
+  let split: { rentBalance: string; billsBalance: string; kind: string } | undefined;
 
   if (leaseId && /^\d{4}-\d{2}$/.test(periodMonth)) {
     const { data: ledger } = await supabase
@@ -68,10 +66,11 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
 
     if (current) {
       existingPaid = current.paid;
-      existingRent = current.paid_rent;
-      existingBills = current.paid_bills;
 
       if (current.split_rent_and_bills) {
+        const chosen = kind === "bills" ? "bills" : kind === "rent" ? "rent" : "";
+        // Editing an existing payment of that kind starts from its amount.
+        existingPaid = chosen === "bills" ? current.paid_bills : chosen === "rent" ? current.paid_rent : "";
         // Balances carried in from the month before, so the landlord can see
         // what each stream stands at while allocating.
         split = {
@@ -83,7 +82,10 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
             (previous?.bills_balance ?? "0.00").replace("-", ""),
             current.currency,
           ) + (previous?.bills_balance?.startsWith("-") ? " дълг" : " кредит"),
+          kind: chosen,
         };
+      } else {
+        existingPaid = current.paid;
       }
       due = {
         charges: current.charges,
@@ -121,8 +123,7 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
             lease_id: leaseId,
             period_month: periodMonth,
             paid_amount: existingPaid || undefined,
-            paid_rent: existingRent || undefined,
-            paid_bills: existingBills || undefined,
+            kind: typeof kind === "string" ? kind : undefined,
           }}
           due={due}
           split={split}
