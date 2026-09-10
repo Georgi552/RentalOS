@@ -78,3 +78,56 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+// Password recovery.
+//
+// The reply is deliberately the same whether or not the address has an
+// account: telling a stranger which emails are registered is a gift to
+// someone stuffing credentials.
+export async function requestPasswordReset(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+
+  if (!email) {
+    redirect(`/forgot-password?error=${encodeURIComponent("Въведи имейл адрес.")}`);
+  }
+
+  const supabase = await createClient();
+
+  // Supabase sends the link; /auth/confirm exchanges the token for a session
+  // and then hands the visitor to the page where they choose a new password.
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${await siteUrl()}/auth/confirm?next=/reset-password`,
+  });
+
+  redirect("/forgot-password?sent=1");
+}
+
+// Reached only with a session, which the recovery link creates.
+export async function setNewPassword(formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+
+  if (password.length < 8) {
+    redirect(`/reset-password?error=${encodeURIComponent("Паролата трябва да е поне 8 символа.")}`);
+  }
+  if (password !== confirmation) {
+    redirect(`/reset-password?error=${encodeURIComponent("Двете пароли не съвпадат.")}`);
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect(`/login?error=${encodeURIComponent("Връзката за смяна на парола е изтекла. Поискай нова.")}`);
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    redirect(`/reset-password?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/dashboard?password=changed");
+}

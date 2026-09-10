@@ -17,6 +17,11 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 
 ## Known limitations to revisit
 
+- Password recovery emails go through Supabase's built-in mail service, which
+  is rate limited to a handful per hour and sends from a Supabase address.
+  Statements already use Resend; pointing Supabase's SMTP at it too would make
+  recovery reliable and put both under one sender domain.
+
 - A provider-side credit is recorded per bill, not tracked as a running
   balance at the provider. If a credit spans several months, each invoice has
   to be read and decided on its own.

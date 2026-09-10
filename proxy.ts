@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/supabase/env";
 
 // Routes reachable without a session. Everything else requires one.
-const PUBLIC_PATHS = ["/", "/login", "/signup"];
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/forgot-password"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/auth/");

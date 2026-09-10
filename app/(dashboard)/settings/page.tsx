@@ -1,9 +1,9 @@
 import { requireOrganization } from "@/lib/auth";
 import { emailConfigured } from "@/lib/email";
-import { StatementSettingsForm } from "./settings-form";
+import { ChangePasswordForm, StatementSettingsForm } from "./settings-form";
 
 export default async function SettingsPage({ searchParams }: PageProps<"/settings">) {
-  const { saved } = await searchParams;
+  const { saved, password } = await searchParams;
   const { supabase, organizationId } = await requireOrganization();
 
   const { data, error } = await supabase
@@ -37,6 +37,8 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
         </p>
       )}
 
+      <h2 className="mt-8 text-lg font-semibold tracking-tight">Справки за наематели</h2>
+
       <StatementSettingsForm
         name={data?.name ?? ""}
         autoSend={data?.statement_auto_send ?? false}
@@ -44,6 +46,14 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
         fromName={data?.statement_from_name ?? ""}
         replyTo={data?.statement_reply_to ?? ""}
       />
+
+      <h2 className="mt-12 text-lg font-semibold tracking-tight">Парола</h2>
+      {password === "changed" && (
+        <p className="mt-4 max-w-lg rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+          Паролата е сменена.
+        </p>
+      )}
+      <ChangePasswordForm />
     </div>
   );
 }

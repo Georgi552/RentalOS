@@ -41,10 +41,11 @@ export function Field({
   min,
   max,
   step,
+  autoComplete,
 }: {
   label: string;
   name: string;
-  type?: "text" | "email" | "tel" | "date" | "number";
+  type?: "text" | "email" | "tel" | "date" | "number" | "password";
   defaultValue?: string;
   error?: string;
   required?: boolean;
@@ -53,6 +54,7 @@ export function Field({
   min?: string;
   max?: string;
   step?: string;
+  autoComplete?: string;
 }) {
   return (
     <Label label={label} required={required} hint={hint} error={error}>
@@ -64,6 +66,7 @@ export function Field({
         min={min}
         max={max}
         step={step}
+        autoComplete={autoComplete}
         className={inputClass}
         aria-invalid={error ? true : undefined}
       />

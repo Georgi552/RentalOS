@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireOrganization } from "@/lib/auth";
+import { requireOrganization, requireUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
 export type SettingsFormState = {
   error?: string;
@@ -57,4 +58,42 @@ export async function updateStatementSettings(
 
   revalidatePath("/settings");
   redirect("/settings?saved=1");
+}
+
+export type PasswordFormState = { error?: string };
+
+// Changing a password requires proving the current one. Without that, anyone
+// who reaches an unlocked laptop, or borrows a session another way, could lock
+// the owner out of their own account.
+export async function changePassword(
+  _prev: PasswordFormState,
+  formData: FormData,
+): Promise<PasswordFormState> {
+  const current = String(formData.get("current_password") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+
+  if (!current) return { error: "Въведи сегашната си парола." };
+  if (password.length < 8) return { error: "Новата парола трябва да е поне 8 символа." };
+  if (password !== confirmation) return { error: "Двете нови пароли не съвпадат." };
+  if (password === current) return { error: "Новата парола е същата като сегашната." };
+
+  const { user } = await requireUser();
+  if (!user.email) return { error: "Акаунтът няма имейл адрес." };
+
+  const supabase = await createClient();
+
+  // Re-authenticating is what proves the current password. It refreshes the
+  // session for the same user, so nothing else changes.
+  const { error: checkError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: current,
+  });
+
+  if (checkError) return { error: "Сегашната парола не е вярна." };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+
+  redirect("/settings?password=changed");
 }

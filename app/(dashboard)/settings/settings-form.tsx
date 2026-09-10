@@ -2,8 +2,8 @@
 
 import { useActionState } from "react";
 import { Field, FormError, SubmitRow } from "@/components/form";
-import type { SettingsFormState } from "./actions";
-import { updateStatementSettings } from "./actions";
+import type { PasswordFormState, SettingsFormState } from "./actions";
+import { changePassword, updateStatementSettings } from "./actions";
 
 export function StatementSettingsForm({
   name,
@@ -83,6 +83,52 @@ export function StatementSettingsForm({
       />
 
       <SubmitRow pending={pending} submitLabel="Запази настройките" cancelHref="/dashboard" />
+    </form>
+  );
+}
+
+export function ChangePasswordForm() {
+  const [state, formAction, pending] = useActionState<PasswordFormState, FormData>(
+    changePassword,
+    {},
+  );
+
+  return (
+    <form action={formAction} className="mt-6 max-w-lg space-y-4">
+      <FormError message={state.error} />
+
+      <Field
+        label="Сегашна парола"
+        name="current_password"
+        type="password"
+        required
+        autoComplete="current-password"
+      />
+      <Field
+        label="Нова парола"
+        name="password"
+        type="password"
+        required
+        autoComplete="new-password"
+        hint="Поне 8 символа"
+      />
+      <Field
+        label="Повтори новата парола"
+        name="confirmation"
+        type="password"
+        required
+        autoComplete="new-password"
+      />
+
+      <div className="pt-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
+        >
+          {pending ? "Записване..." : "Смени паролата"}
+        </button>
+      </div>
     </form>
   );
 }
