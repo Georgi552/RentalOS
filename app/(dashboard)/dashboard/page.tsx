@@ -105,7 +105,7 @@ export default async function DashboardPage() {
                   </p>
                 </div>
 
-                <div className="text-right">
+                <div className="w-full sm:w-auto sm:text-right">
                   <p className="text-xs text-neutral-500">
                     Текущ баланс · {current.month.slice(0, 7)}
                   </p>

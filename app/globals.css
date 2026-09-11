@@ -3,6 +3,21 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #ffffff;
+  --surface-muted: #f5f5f5;
+  --surface-subtle: #fafafa;
+  --border: #e5e5e5;
+  --border-strong: #d4d4d4;
+  --muted: #737373;
+  --muted-strong: #525252;
+  --link: #171717;
+  --button-primary: #171717;
+  --button-primary-hover: #404040;
+  --button-primary-fg: #ffffff;
+  --chart-grid: #e1e0d9;
+  --chart-grid-strong: #c3c2b7;
+  --chart-label: #52514e;
+  --chart-label-muted: #898781;
 }
 
 @theme inline {
@@ -14,9 +29,28 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #111111;
     --foreground: #ededed;
+    --surface: #181818;
+    --surface-muted: #242424;
+    --surface-subtle: #202020;
+    --border: #3a3a3a;
+    --border-strong: #525252;
+    --muted: #b8b8b8;
+    --muted-strong: #d4d4d4;
+    --link: #fafafa;
+    --button-primary: #f5f5f5;
+    --button-primary-hover: #d4d4d4;
+    --button-primary-fg: #171717;
+    --chart-grid: #3f3f3f;
+    --chart-grid-strong: #5a5a5a;
+    --chart-label: #d4d4d4;
+    --chart-label-muted: #a3a3a3;
   }
+}
+
+html {
+  color-scheme: light;
 }
 
 body {
@@ -25,7 +59,168 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+main,
+section,
+article,
+form,
+fieldset,
+label,
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+input,
+select,
+textarea {
+  background: var(--surface);
+  color: var(--foreground);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+input::file-selector-button {
+  background: var(--button-primary);
+  color: var(--button-primary-fg);
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+
+  .text-neutral-400 {
+    color: #a3a3a3;
+  }
+
+  .text-neutral-500 {
+    color: var(--muted);
+  }
+
+  .text-neutral-600,
+  .text-neutral-700 {
+    color: var(--muted-strong);
+  }
+
+  .text-neutral-900,
+  .hover\:text-neutral-900:hover {
+    color: var(--link);
+  }
+
+  .border-neutral-200,
+  .border-neutral-300,
+  .divide-neutral-200 > :not(:last-child) {
+    border-color: var(--border);
+  }
+
+  .focus\:border-neutral-900:focus {
+    border-color: var(--foreground);
+  }
+
+  .bg-white {
+    background-color: var(--surface);
+  }
+
+  .bg-neutral-50,
+  .bg-neutral-100,
+  .hover\:bg-neutral-50:hover {
+    background-color: var(--surface-muted);
+  }
+
+  .bg-neutral-900 {
+    background-color: var(--button-primary);
+  }
+
+  .hover\:bg-neutral-700:hover {
+    background-color: var(--button-primary-hover);
+  }
+
+  .bg-neutral-900.text-white,
+  .file\:bg-neutral-900::file-selector-button {
+    color: var(--button-primary-fg);
+  }
+
+  .file\:bg-neutral-900::file-selector-button {
+    background-color: var(--button-primary);
+  }
+
+  .bg-green-50 {
+    background-color: #052e16;
+  }
+
+  .text-green-800 {
+    color: #bbf7d0;
+  }
+
+  .bg-amber-50 {
+    background-color: #451a03;
+  }
+
+  .text-amber-800 {
+    color: #fde68a;
+  }
+
+  .bg-red-50 {
+    background-color: #450a0a;
+  }
+
+  .text-red-600,
+  .text-red-700 {
+    color: #fca5a5;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid.grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .flex.items-center.justify-between {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .flex.items-center.justify-between > .ml-4 {
+    margin-left: 0;
+  }
+
+  dl > .flex.gap-4.py-2 {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  dl > .flex.gap-4.py-2 > dt {
+    width: auto;
+  }
+}
+
 @media print {
+  :root {
+    --background: #fff;
+    --foreground: #000;
+    --surface: #fff;
+    --surface-muted: #f5f5f5;
+    --border: #999;
+    --muted: #737373;
+    --muted-strong: #525252;
+    --link: #000;
+    --button-primary: #000;
+    --button-primary-fg: #fff;
+    --chart-grid: #e1e0d9;
+    --chart-grid-strong: #c3c2b7;
+    --chart-label: #52514e;
+    --chart-label-muted: #898781;
+  }
+
   /* Navigation, buttons and links are noise on paper. */
   .no-print {
     display: none !important;

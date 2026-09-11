@@ -177,7 +177,7 @@ function Gridlines({
               x2={width}
               y1={y}
               y2={y}
-              stroke={t === 0 ? "#c3c2b7" : "#e1e0d9"}
+              stroke={t === 0 ? "var(--chart-grid-strong)" : "var(--chart-grid)"}
               strokeWidth={1}
             />
             <text
@@ -185,7 +185,7 @@ function Gridlines({
               y={y + 3.5}
               textAnchor="end"
               fontSize={10}
-              fill="#898781"
+              fill="var(--chart-label-muted)"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {Math.round(max * t)}
@@ -207,7 +207,7 @@ function MonthLabels({ months, y, width }: { months: ChartMonth[]; y: number; wi
           y={y}
           textAnchor="middle"
           fontSize={11}
-          fill="#52514e"
+          fill="var(--chart-label)"
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
           {month.month.slice(0, 7)}
@@ -370,7 +370,7 @@ function SplitChart({ months }: { months: ChartMonth[] }) {
 
             return (
               <g key={panel.title}>
-                <text x={0} y={top - 8} fontSize={10} fill="#898781">
+                <text x={0} y={top - 8} fontSize={10} fill="var(--chart-label-muted)">
                   {panel.title}
                 </text>
                 <Gridlines top={top} plot={PANEL_H} max={max} width={width} />

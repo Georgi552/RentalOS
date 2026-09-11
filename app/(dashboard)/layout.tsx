@@ -2,6 +2,18 @@ import Link from "next/link";
 import { signOut } from "../(auth)/actions";
 import { requireUser } from "@/lib/auth";
 
+const navItems = [
+  { href: "/dashboard", label: "Табло" },
+  { href: "/properties", label: "Имоти" },
+  { href: "/tenants", label: "Наематели" },
+  { href: "/leases", label: "Договори" },
+  { href: "/rent", label: "Плащания" },
+  { href: "/bills", label: "Сметки" },
+  { href: "/expenses", label: "Разходи" },
+  { href: "/documents", label: "Документи" },
+  { href: "/settings", label: "Настройки" },
+];
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -12,44 +24,26 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <header className="no-print border-b border-neutral-200">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-6">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div className="min-w-0 lg:flex lg:items-center lg:gap-6">
             <Link href="/dashboard" className="font-semibold tracking-tight">
               RentalOS
             </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href="/dashboard" className="text-neutral-500 hover:text-neutral-900">
-                Табло
-              </Link>
-              <Link href="/properties" className="text-neutral-500 hover:text-neutral-900">
-                Имоти
-              </Link>
-              <Link href="/tenants" className="text-neutral-500 hover:text-neutral-900">
-                Наематели
-              </Link>
-              <Link href="/leases" className="text-neutral-500 hover:text-neutral-900">
-                Договори
-              </Link>
-              <Link href="/rent" className="text-neutral-500 hover:text-neutral-900">
-                Плащания
-              </Link>
-              <Link href="/bills" className="text-neutral-500 hover:text-neutral-900">
-                Сметки
-              </Link>
-              <Link href="/expenses" className="text-neutral-500 hover:text-neutral-900">
-                Разходи
-              </Link>
-              <Link href="/documents" className="text-neutral-500 hover:text-neutral-900">
-                Документи
-              </Link>
-              <Link href="/settings" className="text-neutral-500 hover:text-neutral-900">
-                Настройки
-              </Link>
+            <nav className="-mx-4 mt-3 flex gap-4 overflow-x-auto px-4 pb-1 text-sm sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0 lg:mt-0">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="shrink-0 whitespace-nowrap text-neutral-500 hover:text-neutral-900"
+                >
+                  {item.label}
+                </Link>
+              ))}
             </nav>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-neutral-500">{user.email}</span>
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="min-w-0 truncate text-sm text-neutral-500">{user.email}</span>
             <form action={signOut}>
               <button
                 type="submit"
@@ -62,7 +56,9 @@ export default async function DashboardLayout({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        {children}
+      </main>
     </div>
   );
 }
