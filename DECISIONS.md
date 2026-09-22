@@ -47,8 +47,39 @@ Measured against real invoices on a lease with rent due on the 20th:
 Those invoices were issued on 21.07 and 20.08. Charging by issue date put both
 a month late. A provider that invoices late must not shift the tenant's month.
 
-Consequence: an invoice that arrives very late can land in a month whose
-statement has already been sent. `bills.charge_month_override` moves it by hand.
+There is one floor under this: **a bill is never charged in a month before the
+invoice existed.** If the issue date falls in a later calendar month than the
+one the period end picked, the charge moves forward to the month of issue —
+`public.bill_charge_month(date, date, integer)`.
+
+The invoice that forced it, from Електрохолд, on a lease with rent due on the
+15th:
+
+| Period | Issued | Period end says | Charged |
+|---|---|---|---|
+| 12.07 – 11.08 | 10.09 | August | September |
+
+August's statement went out on 15.08, three weeks before that invoice existed.
+This account is read around the 11th and invoiced around the 10th of the
+following month, so the period end alone put *every* invoice on it into a closed
+month. The override was meant for the odd late invoice, not for one account
+every month.
+
+The floor is the **calendar month** of issue, deliberately not the rent cycle
+containing the issue date. Електрохолд issues around the 20th, which on the
+other lease is exactly the rent due day: keying off the cycle would put an
+invoice issued on the 21st a month later than one issued on the 20th, so one
+day of provider slippage would move a whole month. The two invoices in the table
+above would both have landed in August, leaving July with no electricity at all.
+The calendar month turns over on the 1st, far from any due day, so it only
+reacts to a provider being late by a full month.
+
+Measured across every bill on the live database, the floor moves exactly one of
+17, and leaves the two invoices this rule was built on where they were.
+
+Consequence: an invoice that arrives very late can still land in a month whose
+statement has already been sent, when the lateness is under a month.
+`bills.charge_month_override` moves it by hand.
 
 ## Periods may not overlap, but a month may hold several
 
@@ -85,7 +116,12 @@ Every provider prints both, each in its own way:
 |---|---|---|
 | Топлофикация | `ВСИЧКО по фактура` | `Оставаща сума за плащане` |
 | Софийска вода | `Сума по фактура` | `ОБЩА ДЪЛЖИМА СУМА` (adds `Старо салдо`) |
-| Електрохолд | `Обща стойност на сделката` | no combined total printed |
+| Електрохолд | `Обща стойност на сделката` | a boxed `NN,NN €` on a line of its own |
+
+Електрохолд prints no *label* for the payable figure, only a box. It was read as
+absent until an invoice applied a −2.94 compensation and the tenant was charged
+43.01 where 40.07 was payable. Two such boxes exist per invoice; the first is
+this invoice and the second the past period.
 
 A real invoice charged 41.34 for the month while nothing was payable, because a
 75.84 equalisation credit covered it.
@@ -181,3 +217,23 @@ Two things that bite:
 `lease_monthly_ledger` and `property_monthly_financials` do the arithmetic.
 Both are grouped by currency, so EUR is never added to BGN, and a bill raised
 in a currency the lease does not use is left out rather than converted.
+
+## One place decides which month a charge belongs to
+
+`lease_bill_charges` and `lease_expense_charges` carry the month. The ledger
+aggregates those views and the tenant statement lists rows from them, so the
+lines on a statement add up to its total by construction.
+
+They did not, for a while. The statement selected its line items with a rule of
+its own — `date_trunc('month', coalesce(period_start, due_date, created_at))` —
+under a comment claiming it mirrored the ledger. On real data the two agreed for
+almost nothing: in one month the ledger charged 73.39 and 48.05 on two leases
+while the statement listed **no bill lines at all**, and bills with no period
+fell back to `created_at` and landed in whatever month they were typed in.
+
+A statement whose total cannot be explained by its own lines defeats the point
+of having one. The fix was to delete the second rule rather than correct it: a
+copy that has to be kept in step will eventually not be.
+
+A test asserts the reconciliation per month, so the two cannot drift apart
+again.

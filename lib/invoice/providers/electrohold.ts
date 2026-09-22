@@ -33,9 +33,19 @@ export const electrohold: ProviderAdapter = {
       periodEnd,
       periodMonth: periodMonth(periodStart, periodEnd),
       amount: parseAmount(firstMatch(text, [/Обща стойност на сделката\s*([\d\s.,]+)/])),
-      // This invoice does not print a combined total, so the payable amount is
-      // left unstated and the past-period figures are surfaced as a note.
-      amountDue: null,
+      // The payable figure is printed in a box of its own, on its own line, as
+      // "40,07 €". It usually equals the transaction total, but a compensation
+      // credited against this invoice makes the two differ:
+      //
+      //   Обща стойност на сделката                    43,01
+      //   Компенсация за месец август 2026г. ... -2,94
+      //   40,07 €
+      //
+      // Two such boxes exist; the first belongs to this invoice and the second
+      // to the past period, so the first match is the one wanted. Reading it
+      // per line matters: the amount before it carries a space as the
+      // thousands separator, so an unanchored pattern can straddle both.
+      amountDue: parseAmount(firstMatch(text, [/^\s*([\d\s]*\d,\d{2})\s*€\s*$/m])),
       providerBalanceNote: pastPeriodNote(text),
       currency: "EUR",
       serviceAddress: firstMatch(text, [/За обект\s*([^\n]+)/]),
@@ -79,6 +89,18 @@ function readingRow(text: string, tariff: string) {
 }
 
 function pastPeriodNote(text: string) {
+  // A compensation credited against this invoice is why the payable figure is
+  // lower than the charge for the period. The invoice also prints a purely
+  // informational compensation rate ("Компенсация за 07.2026, определена от
+  // ... без ДДС"), which carries no amount and must not be reported as one -
+  // hence the trailing amount is required.
+  const compensation = parseAmount(
+    firstMatch(text, [/^Компенсация[^\n]*?(-?\d[\d\s]*,\d{2})\s*$/m]),
+  );
+  if (compensation && compensation !== "0.00") {
+    return `Компенсация по фактурата: ${compensation} EUR`;
+  }
+
   const refund = parseAmount(
     firstMatch(text, [/Възстановена сума от предходен период \(-\)\s*([\d\s.,]+)/]),
   );

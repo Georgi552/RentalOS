@@ -25,12 +25,10 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 - A provider-side credit is recorded per bill, not tracked as a running
   balance at the provider. If a credit spans several months, each invoice has
   to be read and decided on its own.
-- Електрохолд does not print a combined payable total, so its past-period
-  figures are surfaced as a note rather than a number.
 
-- The charge month comes from the period end, so an invoice that arrives very
-  late can land in a month whose statement has already been sent.
-  charge_month_override moves it.
+- The charge month comes from the period end with the month of issue as a floor,
+  so an invoice late by less than a full month can still land in a month whose
+  statement has already been sent. charge_month_override moves it.
 - Bills of the same kind for one property may not have overlapping periods; a
   trigger refuses them. Adjacent periods are fine, and a month can carry more
   than one period.

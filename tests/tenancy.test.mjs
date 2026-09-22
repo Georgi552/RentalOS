@@ -80,14 +80,20 @@ export async function run() {
   });
 
   section("views");
-  // A view without security_invoker runs as its owner and bypasses RLS.
-  for (const view of ["lease_monthly_ledger", "property_monthly_financials"]) {
-    const { rows } = await db.query(
-      `select 'security_invoker=true' = any(c.reloptions) as invoker
-       from pg_class c join pg_namespace n on n.oid = c.relnamespace
-       where n.nspname = 'public' and c.relname = '${view}'`,
-    );
-    if (rows[0]?.invoker) ok(`${view} runs as the caller`);
+  // A view without security_invoker runs as its owner and bypasses RLS. Every
+  // view is enumerated rather than listed by hand, so a new one is covered the
+  // moment it is created instead of being silently unchecked.
+  const { rows: views } = await db.query(`
+    select c.relname as view,
+           'security_invoker=true' = any(c.reloptions) as invoker
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind = 'v'
+    order by c.relname`);
+
+  if (views.length === 0) fail("no views found — the check is not looking at anything");
+  for (const { view, invoker } of views) {
+    if (invoker) ok(`${view} runs as the caller`);
     else fail(`${view} is NOT security_invoker`);
   }
 

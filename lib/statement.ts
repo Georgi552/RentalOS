@@ -19,6 +19,8 @@ export type Statement = {
   rentDue: string;
   billsDue: string;
   expensesDue: string;
+  // Everything owed this month that is not rent, as the ledger sums it.
+  billsAndExpensesDue: string;
   charges: string;
   balanceBefore: string;
   // What the tenant owes now: this month's charges plus anything carried over,
@@ -110,45 +112,35 @@ export async function buildStatement(
     organization: { name: string } | null;
   };
 
-  const nextMonth = new Date(`${period}T00:00:00Z`);
-  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
-  const monthEnd = new Date(nextMonth.getTime() - 86400000).toISOString().slice(0, 10);
-
-  // Line items must add up to the ledger's bills_due, so they are filtered on
-  // the same property, the same currency, and bucketed by the same expression
-  // the ledger uses. PostgREST cannot filter on that expression, so the month
-  // is applied here instead of in the query.
-  const { data: allBills, error: billError } = await supabase
-    .from("bills")
-    .select("bill_type, provider, period_start, period_end, due_date, created_at, amount::text")
+  // The lines come from the same views the ledger aggregates, so they add up to
+  // bills_due and expenses_due by construction. Selecting them by any rule of
+  // this file's own is what made the statement show an unaccountable total
+  // (migration 0021).
+  const { data: billRows, error: billError } = await supabase
+    .from("lease_bill_charges")
+    .select("bill_id, bill_type, provider, period_start, period_end, amount::text")
     .eq("organization_id", organizationId)
-    .eq("property_id", context.property_id)
-    .eq("currency", current.currency)
-    .eq("tenant_chargeable", true)
-    .neq("status", "rejected")
+    .eq("lease_id", leaseId)
+    .eq("month", period)
     .order("bill_type");
 
   if (billError) throw new Error(billError.message);
 
-  const bills = ((allBills ?? []) as unknown as {
+  const bills = (billRows ?? []) as unknown as {
+    bill_id: string;
     bill_type: string;
     provider: string | null;
     period_start: string | null;
     period_end: string | null;
-    due_date: string | null;
-    created_at: string;
     amount: string;
-  }[]).filter((bill) => billMonth(bill) === month);
+  }[];
 
   const { data: expenses, error: expenseError } = await supabase
-    .from("expenses")
-    .select("category, description, expense_date, amount::text")
+    .from("lease_expense_charges")
+    .select("expense_id, category, description, expense_date, amount::text")
     .eq("organization_id", organizationId)
-    .eq("property_id", context.property_id)
-    .eq("currency", current.currency)
-    .eq("tenant_chargeable", true)
-    .gte("expense_date", period)
-    .lte("expense_date", monthEnd)
+    .eq("lease_id", leaseId)
+    .eq("month", period)
     .order("expense_date");
 
   if (expenseError) throw new Error(expenseError.message);
@@ -167,6 +159,7 @@ export async function buildStatement(
     rentDue: current.rent_due,
     billsDue: current.bills_due,
     expensesDue: current.expenses_due,
+    billsAndExpensesDue: current.bills_and_expenses_due,
     charges: current.charges,
     balanceBefore,
     totalDue: amountToPay(current.charges, balanceBefore),
@@ -222,14 +215,4 @@ function amountToPay(charges: string, balanceBefore: string) {
 function creditLeftOver(charges: string, balanceBefore: string) {
   const total = addMoney(charges, negate(balanceBefore));
   return total.startsWith("-") ? total.slice(1) : "0.00";
-}
-
-// The month a bill belongs to, mirroring lease_monthly_ledger exactly:
-// coalesce(period_start, due_date, created_at::date).
-function billMonth(bill: {
-  period_start: string | null;
-  due_date: string | null;
-  created_at: string;
-}) {
-  return (bill.period_start ?? bill.due_date ?? bill.created_at).slice(0, 7);
 }

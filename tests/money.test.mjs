@@ -53,6 +53,80 @@ export async function run() {
     equals("period ending 13.08 -> August", rows.find((r) => r.month === "2026-08")?.bills_due, "34.62");
   }
 
+  section("a bill is never charged before the invoice existed");
+  // Електрохолд reads this account around the 11th and invoices around the 10th
+  // of the NEXT month, so the period end alone put every invoice in a month
+  // whose statement had already gone out. The month of issue is a floor.
+  {
+    const { property, lease } = await makeLease({ rentDueDay: 15 });
+    await addBill(property, { issue: "2026-09-10", from: "2026-07-12", to: "2026-08-11", amount: 43.01 });
+    const rows = await ledger(lease);
+    equals("period ending 11.08 issued 10.09 -> September",
+      rows.find((r) => r.month === "2026-09")?.bills_due, "43.01");
+    equals("and August stays empty",
+      rows.find((r) => r.month === "2026-08")?.bills_due, "0.00");
+  }
+
+  section("a floor only fires on a full month of lateness");
+  // The boundary is the 1st, not the rent due day. Електрохолд issues around
+  // the 20th, which on this lease IS the due day: keying the floor off the rent
+  // cycle would push an invoice issued on the 21st a month past one issued on
+  // the 20th, and both of these would have piled into August.
+  {
+    const { property, lease } = await makeLease({ rentDueDay: 20 });
+    await addBill(property, { issue: "2026-07-21", from: "2026-06-14", to: "2026-06-30", amount: 25.78 });
+    const rows = await ledger(lease);
+    equals("issued 21.07, one day past the due day, stays in July",
+      rows.find((r) => r.month === "2026-07")?.bills_due, "25.78");
+  }
+
+  section("a bill with no issue date is unaffected by the floor");
+  {
+    const { property, lease } = await makeLease({ rentDueDay: 20 });
+    await addBill(property, { from: "2026-06-01", to: "2026-06-30", amount: 12 });
+    const rows = await ledger(lease);
+    equals("period ending 30.06 -> July", rows.find((r) => r.month === "2026-07")?.bills_due, "12.00");
+  }
+
+  section("a statement's lines always add up to its total");
+  // The statement used to pick its line items with its own month rule while the
+  // ledger totalled them with another, so the tenant saw a total that the lines
+  // did not explain. Both now read public.lease_bill_charges; this asserts they
+  // cannot drift apart again.
+  {
+    const { property, lease } = await makeLease({ rentDueDay: 15 });
+    await addBill(property, { issue: "2026-09-10", from: "2026-07-12", to: "2026-08-11", amount: 43.01 });
+    await addBill(property, { issue: "2026-09-11", from: "2026-08-06", to: "2026-09-04", amount: 5.04, type: "water" });
+    await addBill(property, { issue: "2026-07-20", from: "2026-06-01", to: "2026-06-30", amount: 20, type: "heating" });
+
+    const { rows } = await db.query(`
+      select to_char(l.month, 'YYYY-MM') as month,
+             l.bills_due,
+             coalesce(sum(c.amount), 0)::numeric(14, 2) as line_sum
+      from public.lease_monthly_ledger l
+      left join public.lease_bill_charges c
+        on c.lease_id = l.lease_id and c.month = l.month
+      where l.lease_id = '${lease}'
+      group by l.month, l.bills_due
+      order by l.month`);
+
+    const mismatched = rows.filter((row) => row.bills_due !== row.line_sum);
+    if (mismatched.length === 0) ok(`lines reconcile in all ${rows.length} months`);
+    else {
+      fail(
+        "lines do not add up to the ledger",
+        mismatched.map((r) => `${r.month}: total ${r.bills_due}, lines ${r.line_sum}`).join("; "),
+      );
+    }
+
+    // And the months themselves are the ones the rules dictate, not just equal
+    // to each other.
+    equals("late electricity and water land in September",
+      rows.find((r) => r.month === "2026-09")?.bills_due, "48.05");
+    equals("heating for June lands in July",
+      rows.find((r) => r.month === "2026-07")?.bills_due, "20.00");
+  }
+
   section("a short period is charged in its own cycle");
   {
     const { property, lease } = await makeLease({ rentDueDay: 20 });

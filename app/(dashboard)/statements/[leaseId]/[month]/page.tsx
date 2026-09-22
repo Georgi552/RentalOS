@@ -14,6 +14,15 @@ function lineLabel(key: string) {
   );
 }
 
+// A carried balance is negative when the tenant owes. Shown even at zero, so
+// "nothing was brought forward" is stated rather than left to be assumed.
+function balanceLabel(balance: string) {
+  if (balance === "0.00") return "От предходен месец";
+  return balance.startsWith("-")
+    ? "Задължение от предходен месец"
+    : "Надплатено от предходен месец";
+}
+
 export default async function StatementPage({
   params,
   searchParams,
@@ -98,18 +107,23 @@ export default async function StatementPage({
               </tr>
             ))}
 
-            {statement.balanceBefore !== "0.00" && (
-              <tr>
-                <td className="py-2">
-                  {statement.balanceBefore.startsWith("-")
-                    ? "Задължение от предходен месец"
-                    : "Надплатено от предходен месец"}
-                </td>
-                <td className="py-2 text-right whitespace-nowrap">
-                  {formatMoney(statement.balanceBefore.replace("-", ""), statement.currency)}
-                </td>
-              </tr>
-            )}
+            {/* The lines above add up to exactly this, because they come from the
+                same views the ledger totals (migration 0021). */}
+            <tr className="border-t border-neutral-400">
+              <td className="py-2 font-medium">Начислено за месеца</td>
+              <td className="py-2 text-right font-medium whitespace-nowrap">
+                {formatMoney(statement.charges, statement.currency)}
+              </td>
+            </tr>
+
+            <tr>
+              <td className="py-2">
+                {balanceLabel(statement.balanceBefore)}
+              </td>
+              <td className="py-2 text-right whitespace-nowrap">
+                {formatMoney(statement.balanceBefore.replace("-", ""), statement.currency)}
+              </td>
+            </tr>
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-neutral-900">
@@ -173,6 +187,7 @@ function SplitTotals({
   const section = (
     title: string,
     rows: { label: string; detail: string | null; amount: string }[],
+    subtotal: string,
     balanceBefore: string,
     total: string,
     credit: string,
@@ -192,16 +207,18 @@ function SplitTotals({
               </td>
             </tr>
           ))}
-          {balanceBefore !== "0.00" && (
-            <tr>
-              <td className="py-2">
-                {balanceBefore.startsWith("-") ? "От предходен месец" : "Надплатено от предходен месец"}
-              </td>
-              <td className="py-2 text-right whitespace-nowrap">
-                {formatMoney(balanceBefore.replace("-", ""), statement.currency)}
-              </td>
-            </tr>
-          )}
+          <tr className="border-t border-neutral-400">
+            <td className="py-2 font-medium">Начислено за месеца</td>
+            <td className="py-2 text-right font-medium whitespace-nowrap">
+              {formatMoney(subtotal, statement.currency)}
+            </td>
+          </tr>
+          <tr>
+            <td className="py-2">{balanceLabel(balanceBefore)}</td>
+            <td className="py-2 text-right whitespace-nowrap">
+              {formatMoney(balanceBefore.replace("-", ""), statement.currency)}
+            </td>
+          </tr>
           <tr className="border-t-2 border-neutral-900">
             <td className="py-2 font-semibold">За плащане</td>
             <td className="py-2 text-right font-semibold whitespace-nowrap">
@@ -226,6 +243,7 @@ function SplitTotals({
       {section(
         "Наем",
         [{ label: "Наем за месеца", detail: null, amount: statement.rentDue }],
+        statement.rentDue,
         statement.rentBalanceBefore,
         statement.rentTotalDue,
         statement.rentCreditRemaining,
@@ -233,6 +251,7 @@ function SplitTotals({
       {section(
         "Сметки",
         lines,
+        statement.billsAndExpensesDue,
         statement.billsBalanceBefore,
         statement.billsTotalDue,
         statement.billsCreditRemaining,
