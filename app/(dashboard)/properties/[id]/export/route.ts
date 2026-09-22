@@ -32,13 +32,60 @@ export async function GET(
     const { data, error } = await supabase
       .from("lease_monthly_ledger")
       .select(
-        "month, currency, rent_due::text, bills_electricity::text, bills_water::text, bills_heating::text, bills_building_fee::text, bills_internet::text, bills_other::text, expenses_due::text, charges::text, paid::text, balance::text",
+        "month, currency, rent_due::text, bills_electricity::text, bills_water::text, bills_heating::text, bills_building_fee::text, bills_internet::text, bills_other::text, expenses_due::text, bills_and_expenses_due::text, charges::text, paid::text, paid_rent::text, paid_bills::text, balance::text, rent_balance::text, bills_balance::text, split_rent_and_bills",
       )
       .eq("property_id", id)
       .eq("organization_id", organizationId)
       .order("month", { ascending: false });
 
     if (error) throw new Error(error.message);
+
+    const ledger = (data ?? []) as unknown as Record<string, string>[];
+    // On screen a split lease gets two tables, because twelve columns do not
+    // fit. A spreadsheet has no such limit, so both streams stay on one row
+    // where they can be charted and summed per stream.
+    const isSplit = Boolean(ledger[0]?.split_rent_and_bills);
+
+    if (isSplit) {
+      rows.push([
+        "Месец",
+        "Валута",
+        "Наем начислено",
+        "Наем платено",
+        "Наем баланс",
+        "Ток",
+        "Вода",
+        "Топлофикация",
+        "Входна такса",
+        "Друго",
+        "Сметки начислено",
+        "Сметки платено",
+        "Сметки баланс",
+      ]);
+
+      for (const row of ledger) {
+        rows.push([
+          String(row.month).slice(0, 7),
+          row.currency,
+          row.rent_due,
+          row.paid_rent,
+          row.rent_balance,
+          row.bills_electricity,
+          row.bills_water,
+          row.bills_heating,
+          row.bills_building_fee,
+          addMoney(row.bills_internet, row.bills_other, row.expenses_due),
+          row.bills_and_expenses_due,
+          row.paid_bills,
+          row.bills_balance,
+        ]);
+      }
+
+      return csvResponse(
+        `${slugify(property.name)}-zadalzheniya-${today}.csv`,
+        toCsv(rows),
+      );
+    }
 
     rows.push([
       "Месец",
@@ -54,7 +101,7 @@ export async function GET(
       "Баланс",
     ]);
 
-    for (const row of (data ?? []) as unknown as Record<string, string>[]) {
+    for (const row of ledger) {
       rows.push([
         String(row.month).slice(0, 7),
         row.currency,

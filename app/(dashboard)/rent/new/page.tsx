@@ -45,6 +45,10 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
     expenses: string;
     balanceBefore: string;
     currency: string;
+    split?: boolean;
+    billsAndExpenses?: string;
+    rentBalanceBefore?: string;
+    billsBalanceBefore?: string;
   } | undefined;
   let existingPaid = "";
   let split: { rentBalance: string; billsBalance: string; kind: string } | undefined;
@@ -95,6 +99,10 @@ export default async function RecordPaymentPage({ searchParams }: PageProps<"/re
         expenses: current.expenses_due,
         balanceBefore: previous?.balance ?? "0.00",
         currency: current.currency,
+        split: current.split_rent_and_bills,
+        billsAndExpenses: current.bills_and_expenses_due,
+        rentBalanceBefore: previous?.rent_balance ?? "0.00",
+        billsBalanceBefore: previous?.bills_balance ?? "0.00",
       };
     }
   }

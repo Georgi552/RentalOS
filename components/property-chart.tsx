@@ -398,65 +398,109 @@ function SplitChart({ months }: { months: ChartMonth[] }) {
   );
 }
 
-const CHARGE_COLUMNS = [
-  { key: "rent_due", label: "Наем" },
-  { key: "bills_electricity", label: "Ток" },
-  { key: "bills_water", label: "Вода" },
-  { key: "bills_heating", label: "Топлофикация" },
-  { key: "bills_building_fee", label: "Входна такса" },
-] as const;
+// The bills the chart leaves out, gathered into one column.
+const other = (month: ChartMonth) =>
+  addMoney(month.bills_internet, month.bills_other, month.expenses_due);
 
-function BreakdownTable({ months }: { months: ChartMonth[] }) {
+type Column = {
+  label: string;
+  value: (month: ChartMonth) => string;
+  // A balance is the only figure that can be negative, and it is read as an
+  // amount plus a direction rather than a minus sign.
+  balance?: boolean;
+};
+
+const COMBINED_COLUMNS: Column[] = [
+  { label: "Наем", value: (month) => month.rent_due },
+  { label: "Ток", value: (month) => month.bills_electricity },
+  { label: "Вода", value: (month) => month.bills_water },
+  { label: "Топлофикация", value: (month) => month.bills_heating },
+  { label: "Входна такса", value: (month) => month.bills_building_fee },
+  { label: "Друго", value: other },
+  { label: "Задължение", value: (month) => month.charges },
+  { label: "Платено", value: (month) => month.paid },
+  { label: "Баланс", value: (month) => month.balance, balance: true },
+];
+
+// A split lease gets two tables rather than twelve columns, for the same reason
+// the chart gets two panels: the point of the split is that the two streams are
+// read on their own, and a single row invites adding the two balances together.
+const RENT_COLUMNS: Column[] = [
+  { label: "Начислено", value: (month) => month.rent_due },
+  { label: "Платено", value: (month) => month.paid_rent },
+  { label: "Баланс", value: (month) => month.rent_balance, balance: true },
+];
+
+const BILLS_COLUMNS: Column[] = [
+  { label: "Ток", value: (month) => month.bills_electricity },
+  { label: "Вода", value: (month) => month.bills_water },
+  { label: "Топлофикация", value: (month) => month.bills_heating },
+  { label: "Входна такса", value: (month) => month.bills_building_fee },
+  { label: "Друго", value: other },
+  { label: "Начислено", value: (month) => month.bills_and_expenses_due },
+  { label: "Платено", value: (month) => month.paid_bills },
+  { label: "Баланс", value: (month) => month.bills_balance, balance: true },
+];
+
+function MonthTable({
+  months,
+  columns,
+  title,
+}: {
+  months: ChartMonth[];
+  columns: Column[];
+  title?: string;
+}) {
   const currency = months[0]?.currency ?? "EUR";
 
   return (
-    <div className="overflow-x-auto rounded-md border border-neutral-200">
-      <table className="w-full text-xs">
-        <thead className="border-b border-neutral-200 text-left text-neutral-500">
-          <tr>
-            <th className="px-3 py-1.5 font-medium">Месец</th>
-            {CHARGE_COLUMNS.map((column) => (
-              <th key={column.key} className="px-3 py-1.5 text-right font-medium">
-                {column.label}
-              </th>
-            ))}
-            <th className="px-3 py-1.5 text-right font-medium">Друго</th>
-            <th className="px-3 py-1.5 text-right font-medium">Задължение</th>
-            <th className="px-3 py-1.5 text-right font-medium">Платено</th>
-            <th className="px-3 py-1.5 text-right font-medium">Баланс</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-200">
-          {[...months].reverse().map((month) => (
-            <tr key={month.month} style={{ fontVariantNumeric: "tabular-nums" }}>
-              <td className="px-3 py-1.5 whitespace-nowrap">{month.month.slice(0, 7)}</td>
-              {CHARGE_COLUMNS.map((column) => (
-                <td key={column.key} className="px-3 py-1.5 text-right whitespace-nowrap">
-                  {formatMoney(month[column.key], currency)}
-                </td>
+    <div>
+      {title && <p className="mb-1 text-xs font-medium text-neutral-500">{title}</p>}
+      <div className="overflow-x-auto rounded-md border border-neutral-200">
+        <table className="w-full text-xs">
+          <thead className="border-b border-neutral-200 text-left text-neutral-500">
+            <tr>
+              <th className="px-3 py-1.5 font-medium">Месец</th>
+              {columns.map((column) => (
+                <th key={column.label} className="px-3 py-1.5 text-right font-medium">
+                  {column.label}
+                </th>
               ))}
-              <td className="px-3 py-1.5 text-right whitespace-nowrap">
-                {formatMoney(
-                  addMoney(month.bills_internet, month.bills_other, month.expenses_due),
-                  currency,
-                )}
-              </td>
-              <td className="px-3 py-1.5 text-right whitespace-nowrap">
-                {formatMoney(month.charges, currency)}
-              </td>
-              <td className="px-3 py-1.5 text-right whitespace-nowrap">
-                {formatMoney(month.paid, currency)}
-              </td>
-              <td className="px-3 py-1.5 text-right whitespace-nowrap">
-                {formatMoney(month.balance.replace("-", ""), currency)}
-                {month.balance.startsWith("-") ? " дълг" : ""}
-              </td>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-200">
+            {[...months].reverse().map((month) => (
+              <tr key={month.month} style={{ fontVariantNumeric: "tabular-nums" }}>
+                <td className="px-3 py-1.5 whitespace-nowrap">{month.month.slice(0, 7)}</td>
+                {columns.map((column) => {
+                  const raw = column.value(month);
+                  return (
+                    <td key={column.label} className="px-3 py-1.5 text-right whitespace-nowrap">
+                      {formatMoney(column.balance ? raw.replace("-", "") : raw, currency)}
+                      {column.balance && raw.startsWith("-") ? " дълг" : ""}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
+}
+
+function BreakdownTable({ months }: { months: ChartMonth[] }) {
+  if (months[0]?.split_rent_and_bills) {
+    return (
+      <div className="space-y-3">
+        <MonthTable months={months} columns={RENT_COLUMNS} title="Наем" />
+        <MonthTable months={months} columns={BILLS_COLUMNS} title="Сметки" />
+      </div>
+    );
+  }
+
+  return <MonthTable months={months} columns={COMBINED_COLUMNS} />;
 }
 
 export function PropertyChartTable({

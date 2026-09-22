@@ -13,6 +13,108 @@ export type LeaseChoice = {
   split: boolean;
 };
 
+type Due = NonNullable<Parameters<typeof PaymentForm>[0]["due"]>;
+
+function Line({
+  label,
+  amount,
+  currency,
+  strong,
+}: {
+  label: string;
+  amount: string;
+  currency: string;
+  strong?: boolean;
+}) {
+  return (
+    <div
+      className={
+        strong
+          ? "flex justify-between border-t border-neutral-200 pt-1 font-medium text-neutral-900"
+          : "flex justify-between"
+      }
+    >
+      <dt>{label}</dt>
+      <dd>{formatMoney(amount, currency)}</dd>
+    </div>
+  );
+}
+
+function carried(balance: string) {
+  return balance.startsWith("-") ? "Пренесен дълг" : "Пренесен кредит";
+}
+
+function CombinedDue({ due }: { due: Due }) {
+  return (
+    <div className="rounded-lg border border-neutral-200 px-4 py-3 text-sm">
+      <p className="font-medium">Дължимо за месеца</p>
+      <dl className="mt-2 space-y-1 text-neutral-600">
+        <Line label="Наем" amount={due.rent} currency={due.currency} />
+        <Line label="Сметки" amount={due.bills} currency={due.currency} />
+        <Line label="Разходи към наемателя" amount={due.expenses} currency={due.currency} />
+        {due.balanceBefore !== "0.00" && (
+          <Line
+            label={carried(due.balanceBefore)}
+            amount={due.balanceBefore.replace("-", "")}
+            currency={due.currency}
+          />
+        )}
+        <Line label="Общо" amount={due.charges} currency={due.currency} strong />
+      </dl>
+    </div>
+  );
+}
+
+// Two panels, no combined total. A single "Общо" across both streams is exactly
+// the number the split exists to stop the landlord from reaching for: money put
+// towards rent must not appear to have settled a bill.
+function SplitDue({ due }: { due: Due }) {
+  const rentBalance = due.rentBalanceBefore ?? "0.00";
+  const billsBalance = due.billsBalanceBefore ?? "0.00";
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="rounded-lg border border-neutral-200 px-4 py-3 text-sm">
+        <p className="font-medium">Наем за месеца</p>
+        <dl className="mt-2 space-y-1 text-neutral-600">
+          <Line label="Начислено" amount={due.rent} currency={due.currency} />
+          {rentBalance !== "0.00" && (
+            <Line
+              label={carried(rentBalance)}
+              amount={rentBalance.replace("-", "")}
+              currency={due.currency}
+            />
+          )}
+        </dl>
+      </div>
+
+      <div className="rounded-lg border border-neutral-200 px-4 py-3 text-sm">
+        <p className="font-medium">Сметки за месеца</p>
+        <dl className="mt-2 space-y-1 text-neutral-600">
+          <Line label="Сметки" amount={due.bills} currency={due.currency} />
+          <Line label="Разходи към наемателя" amount={due.expenses} currency={due.currency} />
+          {/* Before the carried balance, not after: the total is what this month
+              charged, and a reader takes the last strong line as the sum of
+              everything above it. */}
+          <Line
+            label="Начислено"
+            amount={due.billsAndExpenses ?? due.bills}
+            currency={due.currency}
+            strong
+          />
+          {billsBalance !== "0.00" && (
+            <Line
+              label={carried(billsBalance)}
+              amount={billsBalance.replace("-", "")}
+              currency={due.currency}
+            />
+          )}
+        </dl>
+      </div>
+    </div>
+  );
+}
+
 export function PaymentForm({
   action,
   leases,
@@ -33,7 +135,20 @@ export function PaymentForm({
     notes?: string;
   };
   // What the ledger says is owed for the chosen month, when it is known.
-  due?: { charges: string; rent: string; bills: string; expenses: string; balanceBefore: string; currency: string };
+  due?: {
+    charges: string;
+    rent: string;
+    bills: string;
+    expenses: string;
+    balanceBefore: string;
+    currency: string;
+    // A split lease carries the two streams apart, so the panel can show each
+    // with its own carried balance instead of one total covering both.
+    split?: boolean;
+    billsAndExpenses?: string;
+    rentBalanceBefore?: string;
+    billsBalanceBefore?: string;
+  };
   // Balances for the lease arrived at through a link, shown beside the choice.
   split?: { rentBalance: string; billsBalance: string; kind: string };
   submitLabel: string;
@@ -55,35 +170,7 @@ export function PaymentForm({
     <form action={formAction} className="mt-6 max-w-lg space-y-4">
       <FormError message={state.error} />
 
-      {due && (
-        <div className="rounded-lg border border-neutral-200 px-4 py-3 text-sm">
-          <p className="font-medium">Дължимо за месеца</p>
-          <dl className="mt-2 space-y-1 text-neutral-600">
-            <div className="flex justify-between">
-              <dt>Наем</dt>
-              <dd>{formatMoney(due.rent, due.currency)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt>Сметки</dt>
-              <dd>{formatMoney(due.bills, due.currency)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt>Разходи към наемателя</dt>
-              <dd>{formatMoney(due.expenses, due.currency)}</dd>
-            </div>
-            {due.balanceBefore !== "0.00" && (
-              <div className="flex justify-between">
-                <dt>{due.balanceBefore.startsWith("-") ? "Пренесен дълг" : "Пренесен кредит"}</dt>
-                <dd>{formatMoney(due.balanceBefore.replace("-", ""), due.currency)}</dd>
-              </div>
-            )}
-            <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium text-neutral-900">
-              <dt>Общо</dt>
-              <dd>{formatMoney(due.charges, due.currency)}</dd>
-            </div>
-          </dl>
-        </div>
-      )}
+      {due && (due.split ? <SplitDue due={due} /> : <CombinedDue due={due} />)}
 
       <SelectField
         label="Договор"
