@@ -30,9 +30,49 @@ type BillDetail = {
   document: { id: string; filename: string } | null;
 };
 
+type Supabase = Awaited<ReturnType<typeof requireOrganization>>["supabase"];
+
+// The month the tenant is charged in comes from PostgreSQL
+// (public.bill_charge_month), so the rule is not restated here. It needs the
+// lease's rent due day, so a property without a lease has no month to show.
+async function chargeMonth(
+  supabase: Supabase,
+  organizationId: string,
+  bill: BillDetail,
+): Promise<string | null> {
+  if (bill.charge_month_override) return bill.charge_month_override.slice(0, 7);
+  if (!bill.property) return null;
+
+  const dated = bill.period_end ?? bill.issue_date ?? bill.due_date;
+  if (!dated) return null;
+
+  const { data: lease } = await supabase
+    .from("leases")
+    .select("rent_due_day")
+    .eq("organization_id", organizationId)
+    .eq("property_id", bill.property.id)
+    .in("status", ["active", "ended"])
+    .order("start_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!lease) return null;
+
+  const { data, error } = await supabase.rpc("bill_charge_month", {
+    dated,
+    issue_date: bill.issue_date,
+    rent_due_day: lease.rent_due_day,
+  });
+
+  // Migration 0020 adds the function. Until it has been applied the month is
+  // left out rather than the page failing.
+  if (error || typeof data !== "string") return null;
+  return data.slice(0, 7);
+}
+
 export default async function BillPage({ params, searchParams }: PageProps<"/bills/[id]">) {
   const { id } = await params;
-  const { error: actionError, created, duplicate } = await searchParams;
+  const { error: actionError, created, duplicate, saved } = await searchParams;
   const { supabase, organizationId } = await requireOrganization();
 
   const { data, error } = await supabase
@@ -48,6 +88,7 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
   if (!data) notFound();
 
   const bill = data as unknown as BillDetail;
+  const charged = await chargeMonth(supabase, organizationId, bill);
 
   const rows: [string, string | null][] = [
     ["Вид", label(BILL_TYPE_LABELS, bill.bill_type)],
@@ -56,9 +97,9 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
     ["Дата на издаване", bill.issue_date],
     [
       "Начислена в месец",
-      bill.charge_month_override
-        ? `${bill.charge_month_override.slice(0, 7)} (зададено ръчно)`
-        : null,
+      charged && bill.charge_month_override
+        ? `${charged} (зададено ръчно)`
+        : charged,
     ],
     ["Номер на фактура", bill.invoice_number],
     ["Клиентски номер", bill.customer_number],
@@ -111,6 +152,15 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
           />
         </div>
       </div>
+
+      {saved === "1" && (
+        <p className="mt-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+          Успешно добавена фактура
+          {bill.property ? ` към ${bill.property.name}` : ""} на стойност{" "}
+          {formatMoney(bill.amount, bill.currency)}
+          {charged ? ` за месец ${charged}` : ""}.
+        </p>
+      )}
 
       {created === "1" && (
         <p className="mt-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">

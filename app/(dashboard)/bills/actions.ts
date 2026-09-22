@@ -182,7 +182,7 @@ export async function createBill(
 
   revalidatePath("/bills");
   revalidatePath("/properties");
-  redirect(`/bills/${data.id}`);
+  redirect(`/bills/${data.id}?saved=1`);
 }
 
 export async function updateBill(
