@@ -67,28 +67,23 @@ was deliberately left out.
 ## Set up and live
 
 - **Supabase** project holds the schema and the landlord's real data
-- **Vercel** serves it; `vercel.json` runs `/api/cron/statements` daily at 07:00 UTC
-- **Resend** sends statements
+- **Vercel** serves it on `tedataone.com`; `vercel.json` runs
+  `/api/cron/statements` daily at 07:00 UTC
+- **Resend** sends statements from the verified domain
 - Auth emails still go through Supabase's built-in mailer, which is rate
   limited to a few per hour
 
+**Domain `tedataone.com` is connected and working.** Registered 11.09.2026
+through eNom, DNS at JetHosting (`NS1/NS2.EU109.JETHOSTING.COM`). It is added in
+Vercel, verified in Resend, and `NEXT_PUBLIC_SITE_URL`, `STATEMENT_FROM_EMAIL`
+and Supabase's Site URL plus Redirect URLs all point at it.
+
+**Scheduled sending delivers.** The daily cron has been observed mailing real
+statements. Every one currently arrives in the owner's own inbox, because no
+tenant email addresses have been entered yet — that is missing data, not a
+delivery restriction.
+
 ## Not finished
-
-**Statements cannot reach real tenants yet.** `STATEMENT_FROM_EMAIL` is
-`onboarding@resend.dev`, which only delivers to the account owner. A domain
-must be verified in Resend first. This is the single thing standing between the
-app and being usable.
-
-**Domain `tedataone.com` is bought but not connected.** Registered 11.09.2026
-through eNom, DNS at JetHosting (`NS1/NS2.EU109.JETHOSTING.COM`). Nothing
-points anywhere yet. Connecting it means: add it in Vercel, verify it in
-Resend, then update `NEXT_PUBLIC_SITE_URL` and `STATEMENT_FROM_EMAIL` on Vercel
-and the Site URL plus Redirect URLs in Supabase. Missing the last two breaks
-sign-in.
-
-**Automatic statement sending is untested end to end.** The cron route
-authenticates and the schedule is configured, but no scheduled run has been
-observed delivering mail.
 
 **Email confirmation is switched off** in Supabase so signup is immediate. Turn
 it on before real users.
