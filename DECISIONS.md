@@ -237,3 +237,55 @@ copy that has to be kept in step will eventually not be.
 
 A test asserts the reconciliation per month, so the two cannot drift apart
 again.
+
+## An invoice that arrives by email is still untrusted input
+
+The landlord forwards the provider's mail to an address of their own and the PDF
+goes down exactly the path an uploaded one does. Three decisions shape it, two of
+them the landlord's.
+
+**The address is readable and editable, not a secret token.** So anyone who
+guesses it can put a document into the account. That is accepted rather than
+solved: the compensation is a cap of 50 mails per organization per 24 hours, PDFs
+only, a size limit, and the address being changeable. What a stranger cannot do is
+produce a bill.
+
+**Anyone may send, but an unknown sender only reaches the review queue.** A
+sender on `organization_inbound_senders` can have an invoice turned into a bill
+with nobody looking at it; everyone else lands in `needs_review`.
+
+**That last rule is enforced by the database, not by the route.** The obvious
+version — refuse `status = 'confirmed'` — does not work, because the review form
+writes confirmed bills too, so it would block the landlord from ever confirming
+the very document that was sent to them for that purpose. The database therefore
+has to know *how* a bill was written, which nothing recorded before:
+`autoCreateBillFromDocument` and the form produced identical rows.
+`bills.written_automatically` says a machine wrote it, and
+`bills_auto_needs_known_sender` refuses that combination.
+
+`inbound_emails.sender_known` is stored per email rather than looked up later, so
+removing a sender from the list cannot retroactively invalidate a bill already
+written.
+
+**SPF and DKIM are deliberately not used to decide who sent something.**
+Forwarding through Gmail breaks SPF, so the headers would reject exactly the mail
+this feature exists to accept. The address plus the sender list is the check.
+
+An invoice sent as a link rather than an attachment is not fetched. Following a
+URL out of an unverified email is a request this app will not make; the journal
+records it as `ignored` and the landlord uploads it by hand.
+
+## The attachments never pass through the app
+
+Vercel caps a request body at roughly 4.5 MB while `MAX_UPLOAD_BYTES` allows a
+10 MB document, so a scanned invoice would not fit through a webhook that carried
+it as JSON. The Cloudflare Worker asks the app where to put each PDF, uploads it
+straight to Storage with a short-lived signed URL, and only then tells the app to
+read it.
+
+The same split keeps `SUPABASE_SERVICE_ROLE_KEY` in one environment. Uploading
+with a signed token needs no RLS permissions, so the Worker holds only the anon
+key, which is public anyway.
+
+Every decision — whose invoice this is, whether the sender is trusted, whether a
+bill may be written — stays in the app. The Worker parses MIME and moves bytes.

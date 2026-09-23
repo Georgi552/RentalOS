@@ -1,0 +1,19 @@
+{
+  "name": "rentalos-inbound-email",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.114.0",
+    "postal-mime": "^2.4.4"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "wrangler": "^4"
+  }
+}

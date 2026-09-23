@@ -2,6 +2,10 @@
 
 # dependencies
 /node_modules
+# The Cloudflare Worker is a separate project with its own install. Anchored
+# /node_modules above does not cover it.
+workers/*/node_modules
+workers/*/.wrangler
 /.pnp
 .pnp.*
 .yarn/*
@@ -35,6 +39,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# editor/agent working files (plans, caches)
+.snowflake/
 
 # typescript
 *.tsbuildinfo

@@ -59,10 +59,29 @@ Properties · tenants · leases with per-bill-type terms · rent payments ·
 expenses · documents in private Storage · bills · PDF reading for Електрохолд,
 Софийска вода and Топлофикация София · deterministic property matching ·
 per-property dashboard · tenant statements by hand or on a schedule · CSV and
-print export · password recovery · Bulgarian throughout.
+print export · password recovery · invoices by forwarded email · Bulgarian
+throughout.
 
 `DECISIONS.md` explains the rules behind the numbers. `FUTURE.md` lists what
 was deliberately left out.
+
+## A second deployment target
+
+`workers/inbound-email/` is a Cloudflare Email Worker, not part of the Next.js
+app. It receives mail, keeps the PDFs and hands them to `/api/inbound/email` and
+`/api/inbound/analyze`. It has its own `package.json` and `tsconfig.json`, and is
+excluded from the root `tsconfig` and from eslint, so `npm run build` does NOT
+check it. Check it separately:
+
+```bash
+cd workers/inbound-email && npm install && npm run typecheck
+npx wrangler deploy
+npx wrangler secret put INBOUND_SECRET    # same value as the app's
+```
+
+Why a Worker rather than a route: receiving mail needs MX records, which Vercel
+does not do, and Vercel caps a request body below the 10 MB a document may be.
+`DECISIONS.md` has the reasoning.
 
 ## Set up and live
 
@@ -84,6 +103,29 @@ tenant email addresses have been entered yet — that is missing data, not a
 delivery restriction.
 
 ## Not finished
+
+**Receiving invoices by email is built but not switched on.** The schema, the
+settings screen, both routes and the Worker are in place and tested, but no mail
+can arrive until the domain's DNS moves to Cloudflare. Cloudflare Email Service
+requires the zone to be on Cloudflare, and onboarding adds MX, SPF and DKIM
+records to the root domain.
+
+The order matters and one conflict is waiting:
+
+1. Write down every record currently at JetHosting (A, CNAME, MX, TXT).
+2. Add the zone in Cloudflare and recreate all of them **before** changing
+   nameservers.
+3. Change the nameservers at eNom.
+4. Check the site loads and a statement still sends.
+5. Only then onboard the domain in Email Routing and point a rule at the Worker.
+
+**The conflict:** Resend already has an SPF record on `tedataone.com` and Email
+Routing adds its own. Two SPF records on one name are invalid and break both, so
+they have to be merged into a single TXT record, or Resend's sending moved to a
+subdomain.
+
+Until then `INBOUND_EMAIL_DOMAIN` and `INBOUND_SECRET` are unset and the settings
+screen says so plainly.
 
 **Email confirmation is switched off** in Supabase so signup is immediate. Turn
 it on before real users.

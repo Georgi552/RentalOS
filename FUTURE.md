@@ -29,6 +29,15 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 - The charge month comes from the period end with the month of issue as a floor,
   so an invoice late by less than a full month can still land in a month whose
   statement has already been sent. charge_month_override moves it.
+
+- An invoice sent as a link rather than an attachment is not ingested. The
+  inbound journal records it as "Без фактура" and the landlord uploads it by
+  hand. Fetching a URL out of an unverified email is deliberately not done.
+- The inbound address is per organization and readable rather than secret, so a
+  stranger who guesses it can fill the review queue. Bounded by 50 mails per
+  24 hours and by the address being changeable, not prevented.
+- The Cloudflare Worker is not covered by `npm test`, `npm run lint` or
+  `npm run build`. It has its own `typecheck` script and nothing beyond that.
 - Bills of the same kind for one property may not have overlapping periods; a
   trigger refuses them. Adjacent periods are fine, and a month can carry more
   than one period.
@@ -55,10 +64,12 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
 
 ## Post-MVP (context doc section 8)
 
-- Email ingestion of invoices
 - Utility provider integrations (Sofia Water, Electrohold, EVN, Energo-Pro)
 - Payment matching against bank transactions
 - Stripe subscriptions
 - Multi-country support
 - Advanced profitability analytics
 - Snowflake / dbt analytics layer
+
+Email ingestion of invoices is built; see STATE.md for what is left to switch it
+on.

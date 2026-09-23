@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOrganization, requireUser } from "@/lib/auth";
+import {
+  normalizeEmail,
+  validateInboxAddress,
+  validateSenderEmail,
+} from "@/lib/inbound";
 import { createClient } from "@/lib/supabase/server";
 
 export type SettingsFormState = {
@@ -60,8 +65,91 @@ export async function updateStatementSettings(
   redirect("/settings?saved=1");
 }
 
-export type PasswordFormState = { error?: string };
+export type InboundFormState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+};
 
+// The landlord owns their inbox address and may change it, which is the whole
+// reason it is readable rather than a generated token. Changing it retires the
+// old one immediately: mail sent to it afterwards no longer resolves to an
+// organization and is refused at the door.
+export async function updateInboxAddress(
+  _prev: InboundFormState,
+  formData: FormData,
+): Promise<InboundFormState> {
+  const address = text(formData, "inbox_address").toLowerCase();
+
+  const problem = validateInboxAddress(address);
+  if (problem) return { fieldErrors: { inbox_address: problem } };
+
+  const { supabase, organizationId } = await requireOrganization();
+
+  const { error } = await supabase
+    .from("organizations")
+    .update({ inbox_address: address })
+    .eq("id", organizationId);
+
+  if (error) {
+    // The unique index is the real guard. Another landlord may hold this
+    // address, and saying so is not a leak: an address is meant to be known.
+    if (error.code === "23505") {
+      return { fieldErrors: { inbox_address: "Този адрес е зает. Избери друг." } };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath("/settings");
+  redirect("/settings?inbox=1");
+}
+
+// A sender on this list can have an invoice turned into a bill without anyone
+// looking at it, so adding one is a real grant of trust, not a convenience.
+export async function addInboundSender(
+  _prev: InboundFormState,
+  formData: FormData,
+): Promise<InboundFormState> {
+  const email = normalizeEmail(text(formData, "email"));
+  const note = text(formData, "note");
+
+  const problem = validateSenderEmail(email);
+  if (problem) return { fieldErrors: { email: problem } };
+
+  const { supabase, organizationId } = await requireOrganization();
+
+  const { error } = await supabase
+    .from("organization_inbound_senders")
+    .insert({ organization_id: organizationId, email, note: note || null });
+
+  if (error) {
+    if (error.code === "23505") {
+      return { fieldErrors: { email: "Този подател вече е в списъка." } };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath("/settings");
+  redirect("/settings?sender=added");
+}
+
+export async function removeInboundSender(id: string) {
+  const { supabase, organizationId } = await requireOrganization();
+
+  const { error } = await supabase
+    .from("organization_inbound_senders")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+
+  if (error) {
+    redirect(`/settings?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/settings");
+  redirect("/settings?sender=removed");
+}
+
+export type PasswordFormState = { error?: string };
 // Changing a password requires proving the current one. Without that, anyone
 // who reaches an unlocked laptop, or borrows a session another way, could lock
 // the owner out of their own account.

@@ -2,8 +2,84 @@
 
 import { useActionState } from "react";
 import { Field, FormError, SubmitRow } from "@/components/form";
-import type { PasswordFormState, SettingsFormState } from "./actions";
-import { changePassword, updateStatementSettings } from "./actions";
+import type { InboundFormState, PasswordFormState, SettingsFormState } from "./actions";
+import {
+  addInboundSender,
+  changePassword,
+  updateInboxAddress,
+  updateStatementSettings,
+} from "./actions";
+
+export function InboxAddressForm({
+  address,
+  domain,
+}: {
+  address: string;
+  domain: string;
+}) {
+  const [state, formAction, pending] = useActionState<InboundFormState, FormData>(
+    updateInboxAddress,
+    {},
+  );
+
+  return (
+    <form action={formAction} className="mt-6 max-w-lg space-y-4">
+      <FormError message={state.error} />
+
+      <div>
+        <Field
+          label="Адрес за фактури"
+          name="inbox_address"
+          required
+          defaultValue={address}
+          error={state.fieldErrors?.inbox_address}
+          hint={`Препращай фактурите на този адрес. Пиши само частта преди @${domain}.`}
+          maxLength={64}
+        />
+      </div>
+
+      <SubmitRow pending={pending} submitLabel="Запази адреса" cancelHref="/settings" />
+    </form>
+  );
+}
+
+export function AddInboundSenderForm() {
+  const [state, formAction, pending] = useActionState<InboundFormState, FormData>(
+    addInboundSender,
+    {},
+  );
+
+  return (
+    <form action={formAction} className="mt-4 max-w-lg space-y-4">
+      <FormError message={state.error} />
+
+      <Field
+        label="Имейл на подател"
+        name="email"
+        type="email"
+        required
+        error={state.fieldErrors?.email}
+        hint="Фактура от този адрес може да стане сметка, без да я преглеждаш."
+      />
+
+      <Field
+        label="Бележка"
+        name="note"
+        hint="За кого е този адрес. Само за твое сведение."
+      />
+
+      <div className="pt-1">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
+        >
+          {pending ? "Записване..." : "Добави подател"}
+        </button>
+      </div>
+    </form>
+  );
+}
 
 export function StatementSettingsForm({
   name,

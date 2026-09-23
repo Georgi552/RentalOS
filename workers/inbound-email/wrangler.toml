@@ -1,0 +1,20 @@
+name = "rentalos-inbound-email"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# postal-mime and supabase-js both run on the Workers runtime without Node
+# built-ins, so no nodejs_compat flag is needed.
+
+[vars]
+# The app that owns the business logic. Set to the production URL; wrangler dev
+# can point this at a tunnel or at http://localhost:3000.
+APP_URL = "https://tedataone.com"
+SUPABASE_URL = ""
+SUPABASE_ANON_KEY = ""
+
+# Secrets are NOT set here. Set them once with:
+#
+#   npx wrangler secret put INBOUND_SECRET
+#
+# The same value has to be in the app's environment on Vercel, or every request
+# from this Worker is refused with 401.
