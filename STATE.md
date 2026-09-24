@@ -88,44 +88,76 @@ does not do, and Vercel caps a request body below the 10 MB a document may be.
 - **Supabase** project holds the schema and the landlord's real data
 - **Vercel** serves it on `tedataone.com`; `vercel.json` runs
   `/api/cron/statements` daily at 07:00 UTC
-- **Resend** sends statements from the verified domain
+- **Resend** sends statements from `noreply@tedataone.com`; the domain is
+  verified. See below.
 - Auth emails still go through Supabase's built-in mailer, which is rate
   limited to a few per hour
 
-**Domain `tedataone.com` is connected and working.** Registered 11.09.2026
-through eNom, DNS at JetHosting (`NS1/NS2.EU109.JETHOSTING.COM`). It is added in
-Vercel, verified in Resend, and `NEXT_PUBLIC_SITE_URL`, `STATEMENT_FROM_EMAIL`
-and Supabase's Site URL plus Redirect URLs all point at it.
+**Domain `tedataone.com` serves the app.** Registered 11.09.2026 through eNom.
+DNS is at eNom's own nameservers (`dns1`-`dns5.name-services.com`), **not**
+JetHosting - an earlier version of this file said otherwise and was wrong. The
+apex A record and the `www` CNAME point at Vercel.
 
-**Scheduled sending delivers.** The daily cron has been observed mailing real
-statements. Every one currently arrives in the owner's own inbox, because no
-tenant email addresses have been entered yet — that is missing data, not a
-delivery restriction.
+**Statements reach real tenants.** Verified on 24.09: `tedataone.com` is verified
+in Resend and a manual statement to `gm55@abv.bg` came back `sent` with a
+provider message id. That address is the one that had failed before, so it is the
+same test, not a weaker one.
+
+Three records were added at eNom to get there, and nothing else changed:
+
+| Type | Name | Value |
+|---|---|---|
+| TXT | `resend._domainkey` | the DKIM public key |
+| CNAME | `rsend` | `rsend-euw1.forge.rmta.net` |
+| CNAME | `send` | `send.forge.rmta.net` |
+
+`STATEMENT_FROM_EMAIL` is `noreply@tedataone.com`. No mailbox exists behind it
+and none is needed; the app only sends. Replies are handled by `reply_to`
+(`lib/email.ts:48`).
+
+Two earlier claims in this file were wrong and are corrected here. Resend
+sending needs **no apex MX and no apex SPF TXT** - it uses CNAMEs on the `rsend`
+and `send` subdomains - so the SPF conflict this file warned about does not
+exist. And `STATEMENT_FROM_EMAIL` was never blank on Vercel: the variables are
+marked Sensitive, so Vercel shows an empty field when you reopen them for
+editing. The 12.09 scheduled send proves they were set, because the cron
+delivered through Resend.
+
+What the earlier failure actually was: `STATEMENT_FROM_EMAIL` held
+`onboarding@resend.dev`, Resend's sandbox sender, which permits only the account
+owner's own address as recipient.
+
+`sent` means Resend accepted the message. Delivery to the recipient's mailbox is
+a separate question and is not recorded anywhere.
 
 ## Not finished
 
 **Receiving invoices by email is built but not switched on.** The schema, the
 settings screen, both routes and the Worker are in place and tested, but no mail
-can arrive until the domain's DNS moves to Cloudflare. Cloudflare Email Service
-requires the zone to be on Cloudflare, and onboarding adds MX, SPF and DKIM
-records to the root domain.
+can arrive until an inbound provider is chosen and pointed at the app.
 
-The order matters and one conflict is waiting:
+The choice is open:
 
-1. Write down every record currently at JetHosting (A, CNAME, MX, TXT).
-2. Add the zone in Cloudflare and recreate all of them **before** changing
-   nameservers.
-3. Change the nameservers at eNom.
-4. Check the site loads and a statement still sends.
-5. Only then onboard the domain in Email Routing and point a rule at the Worker.
+- **Cloudflare Email Routing** - free, inbound unlimited. Requires moving the
+  zone's nameservers to Cloudflare. The Worker in `workers/inbound-email` is
+  written for this path. Workers Free allows 100k requests/day but only **10 ms
+  CPU** per invocation, which is why the Worker only uploads and defers parsing.
+- **Resend inbound** - no DNS move at all, and the account already exists. Two
+  unknowns: whether attachments arrive inline (Vercel caps a request body at
+  ~4.5 MB, while `MAX_UPLOAD_BYTES` is 10 MB) or as links to fetch, and whether
+  inbound messages count against the 3,000/month free quota.
 
-**The conflict:** Resend already has an SPF record on `tedataone.com` and Email
-Routing adds its own. Two SPF records on one name are invalid and break both, so
-they have to be merged into a single TXT record, or Resend's sending moved to a
-subdomain.
+If Cloudflare is chosen, recreate every record in Cloudflare **before** changing
+nameservers at eNom: the apex A, the `www` CNAME, and the three Resend records
+above. Then check the site loads and a statement still sends, and only then
+onboard Email Routing and point a rule at the Worker.
 
-Until then `INBOUND_EMAIL_DOMAIN` and `INBOUND_SECRET` are unset and the settings
-screen says so plainly.
+The SPF conflict an earlier version of this file predicted is not a risk.
+Resend puts nothing on the apex, so Email Routing's MX and SPF can sit alongside
+it untouched.
+
+Until an inbound provider is live, `INBOUND_EMAIL_DOMAIN` and `INBOUND_SECRET`
+are unset and the settings screen says so plainly.
 
 **Email confirmation is switched off** in Supabase so signup is immediate. Turn
 it on before real users.
