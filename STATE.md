@@ -127,8 +127,9 @@ What the earlier failure actually was: `STATEMENT_FROM_EMAIL` held
 `onboarding@resend.dev`, Resend's sandbox sender, which permits only the account
 owner's own address as recipient.
 
-`sent` means Resend accepted the message. Delivery to the recipient's mailbox is
-a separate question and is not recorded anywhere.
+`sent` in `statement_sends` only means Resend accepted the message. For this one
+the mailbox was checked by hand and the statement had arrived, so the path is
+confirmed end to end, including that abv.bg did not treat it as spam.
 
 ## Not finished
 
