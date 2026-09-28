@@ -94,22 +94,29 @@ does not do, and Vercel caps a request body below the 10 MB a document may be.
   limited to a few per hour
 
 **Domain `tedataone.com` serves the app.** Registered 11.09.2026 through eNom.
-DNS is at eNom's own nameservers (`dns1`-`dns5.name-services.com`), **not**
-JetHosting - an earlier version of this file said otherwise and was wrong. The
-apex A record and the `www` CNAME point at Vercel.
+DNS is **at Cloudflare** since 28.09.2026. It was at eNom's own nameservers
+(`dns1`-`dns5.name-services.com`) until then, and never at JetHosting - an
+earlier version of this file said JetHosting and was wrong. The registrar is
+still eNom, reached through a Bulgarian reseller panel whose DNS editor is now
+disabled because the zone is elsewhere. The apex A record and the `www` CNAME
+point at Vercel, both with Cloudflare proxying **off**.
 
 **Statements reach real tenants.** Verified on 24.09: `tedataone.com` is verified
 in Resend and a manual statement to `gm55@abv.bg` came back `sent` with a
 provider message id. That address is the one that had failed before, so it is the
 same test, not a weaker one.
 
-Three records were added at eNom to get there, and nothing else changed:
+Three records were added to get there, and nothing else changed. They were
+entered at eNom first and moved with the zone to Cloudflare:
 
 | Type | Name | Value |
 |---|---|---|
 | TXT | `resend._domainkey` | the DKIM public key |
 | CNAME | `rsend` | `rsend-euw1.forge.rmta.net` |
 | CNAME | `send` | `send.forge.rmta.net` |
+
+Email Routing later added apex `MX` records pointing at `route1/2/3.mx.cloudflare.net`
+and an apex SPF `TXT` of `v=spf1 include:_spf.mx.cloudflare.net ~all`.
 
 `STATEMENT_FROM_EMAIL` is `noreply@tedataone.com`. No mailbox exists behind it
 and none is needed; the app only sends. Replies are handled by `reply_to`
@@ -131,34 +138,41 @@ owner's own address as recipient.
 the mailbox was checked by hand and the statement had arrived, so the path is
 confirmed end to end, including that abv.bg did not treat it as spam.
 
+**Receiving invoices by email works.** Switched on 28.09.2026 through Cloudflare
+Email Routing. DNS now lives at Cloudflare (`henrik` and `kelly.ns.cloudflare.com`)
+with proxying off on every record, because an orange cloud on the apex breaks
+Vercel's certificate.
+
+The path: mail to `<inbox_address>@tedataone.com` hits Cloudflare's MX, a
+**catch-all** rule hands it to the `rentalos-inbound-email` Worker, the Worker
+parses the MIME and uploads each PDF straight to Supabase Storage with a signed
+URL the app issues, then calls `/api/inbound/analyze`. Catch-all rather than a
+rule per address, because the local part identifies the organization and the app
+answers 404 for one it does not know, which the Worker turns into a bounce.
+
+The Worker holds `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `INBOUND_SECRET` as
+wrangler secrets, not in `wrangler.toml`, because this repository is public. It
+sets `workers_dev = false`: there is no `fetch` handler, so publishing an HTTP
+endpoint would expose something that answers nothing. `APP_URL` is the **www**
+host - the apex answers 308, and following a redirect on a POST that carries an
+Authorization header is a risk not worth taking.
+
+Verified against production, not by reading the dashboard:
+
+- no header and a wrong secret both give 401; the right secret gives 404 with
+  `reject: true` for an inbox that does not exist
+- a mail with no attachment was journalled `ignored`, `sender_known: true`
+- a forwarded Electrohold invoice uploaded a 257 KB PDF and was recognised as
+  already entered, so the bill count stayed at 21
+
+Only `smetki_naemi` is in use. Adding an organization generates an address from
+`public.default_inbox_address`, and the owner can rename it in Settings.
+
+Email Routing added apex MX and SPF records. They do not disturb Resend, which
+uses only the `rsend` and `send` subdomains - the conflict an earlier version of
+this file predicted does not exist.
+
 ## Not finished
-
-**Receiving invoices by email is built but not switched on.** The schema, the
-settings screen, both routes and the Worker are in place and tested, but no mail
-can arrive until an inbound provider is chosen and pointed at the app.
-
-The choice is open:
-
-- **Cloudflare Email Routing** - free, inbound unlimited. Requires moving the
-  zone's nameservers to Cloudflare. The Worker in `workers/inbound-email` is
-  written for this path. Workers Free allows 100k requests/day but only **10 ms
-  CPU** per invocation, which is why the Worker only uploads and defers parsing.
-- **Resend inbound** - no DNS move at all, and the account already exists. Two
-  unknowns: whether attachments arrive inline (Vercel caps a request body at
-  ~4.5 MB, while `MAX_UPLOAD_BYTES` is 10 MB) or as links to fetch, and whether
-  inbound messages count against the 3,000/month free quota.
-
-If Cloudflare is chosen, recreate every record in Cloudflare **before** changing
-nameservers at eNom: the apex A, the `www` CNAME, and the three Resend records
-above. Then check the site loads and a statement still sends, and only then
-onboard Email Routing and point a rule at the Worker.
-
-The SPF conflict an earlier version of this file predicted is not a risk.
-Resend puts nothing on the apex, so Email Routing's MX and SPF can sit alongside
-it untouched.
-
-Until an inbound provider is live, `INBOUND_EMAIL_DOMAIN` and `INBOUND_SECRET`
-are unset and the settings screen says so plainly.
 
 **Email confirmation is switched off** in Supabase so signup is immediate. Turn
 it on before real users.
