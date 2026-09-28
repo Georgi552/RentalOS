@@ -12,9 +12,11 @@ workers_dev = false
 # built-ins, so no nodejs_compat flag is needed.
 
 [vars]
-# The app that owns the business logic. Set to the production URL; wrangler dev
-# can point this at a tunnel or at http://localhost:3000.
-APP_URL = "https://tedataone.com"
+# The app that owns the business logic. This is the canonical host: the apex
+# answers 308 to www, and following a redirect on a POST that carries an
+# Authorization header is a risk not worth taking. wrangler dev can point this
+# at a tunnel or at http://localhost:3000.
+APP_URL = "https://www.tedataone.com"
 
 # SUPABASE_URL, SUPABASE_ANON_KEY and INBOUND_SECRET are deliberately absent.
 # This repository is public, and even though the first two are not secret - the
