@@ -21,11 +21,16 @@ export const BILL_TYPE_LABELS: Record<BillType, string> = {
   other: "Друга сметка",
 };
 
-export type Payer = "landlord" | "tenant";
+// not_charged says the bill type does not apply to this lease at all - no
+// district heating, no building fee. It is a third answer rather than a missing
+// row, because a missing row already means "nobody has said yet" (migration
+// 0023).
+export type Payer = "landlord" | "tenant" | "not_charged";
 
 export const PAYER_LABELS: Record<Payer, string> = {
   landlord: "Ние (наемодател)",
   tenant: "Наемателят",
+  not_charged: "Не се начислява",
 };
 
 export type Collection = "via_rent" | "direct" | "not_applicable";

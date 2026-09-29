@@ -79,6 +79,54 @@ export async function run() {
     );
   });
 
+  section("bill terms");
+  // Every bill type is answered explicitly, and "not charged" is one of the
+  // three answers rather than a missing row (migration 0023). The constraint is
+  // what keeps a half-answered term - charged to nobody, yet collected somehow -
+  // out of the table.
+  await asUser(db, ana.id, async () => {
+    const lease = crypto.randomUUID();
+    await db.exec(`insert into public.leases (id, organization_id, property_id, tenant_id, start_date, monthly_rent)
+      values ('${lease}', '${ana.organizationId}', '${property}', '${tenant}', '2026-01-01', 500)`);
+
+    const term = (billType, payer, collection) =>
+      `insert into public.lease_bill_terms (organization_id, lease_id, bill_type, payer, collection)
+       values ('${ana.organizationId}', '${lease}', '${billType}', '${payer}', '${collection}')`;
+
+    await db.exec(term("heating", "not_charged", "not_applicable"));
+    equals(
+      "a bill type can be declared not charged",
+      (
+        await db.query(
+          `select count(*)::int as n from public.lease_bill_terms
+           where lease_id = '${lease}' and payer = 'not_charged'`,
+        )
+      ).rows[0].n,
+      1,
+    );
+
+    await rejects(
+      db,
+      "not charged cannot also be collected",
+      term("water", "not_charged", "via_rent"),
+      "lease_bill_terms_collection_matches_payer",
+    );
+    await rejects(
+      db,
+      "a bill we pay cannot be collected either",
+      term("water", "landlord", "via_rent"),
+      "lease_bill_terms_collection_matches_payer",
+    );
+    // Which of the two checks fires is not asserted: both forbid an unknown
+    // payer, and PostgreSQL does not promise an evaluation order.
+    await rejects(
+      db,
+      "and no fourth payer exists",
+      term("water", "nobody", "not_applicable"),
+      "violates check constraint",
+    );
+  });
+
   section("views");
   // A view without security_invoker runs as its owner and bypasses RLS. Every
   // view is enumerated rather than listed by hand, so a new one is covered the

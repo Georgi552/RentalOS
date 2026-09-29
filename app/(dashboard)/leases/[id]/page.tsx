@@ -7,6 +7,8 @@ import {
   COLLECTION_SHORT,
   LEASE_STATUS_LABELS,
   PAYER_LABELS,
+  type Collection,
+  type Payer,
   label,
 } from "@/lib/labels";
 import { formatMoney } from "@/lib/money";
@@ -59,8 +61,8 @@ export default async function LeasePage({
 
   const terms = (termData ?? []) as {
     bill_type: string;
-    payer: "landlord" | "tenant";
-    collection: "via_rent" | "direct" | "not_applicable";
+    payer: Payer;
+    collection: Collection;
   }[];
 
   const lease = data as unknown as LeaseDetail;

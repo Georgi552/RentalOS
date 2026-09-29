@@ -57,7 +57,8 @@ export function BillTermsFields({
       </legend>
       <p className="text-xs text-neutral-500">
         За всяка сметка отбележи кой я плаща. Ако я плаща наемателят, избери и как
-        се събира.
+        се събира. Ако имотът няма такава сметка — например без топлофикация или
+        без входна такса — избери „Не се начислява“.
       </p>
 
       {BILL_TYPES.map((billType) => {
@@ -90,6 +91,14 @@ export function BillTermsFields({
               >
                 {PAYER_LABELS.tenant}
               </Radio>
+              <Radio
+                name={`payer_${billType}`}
+                value="not_charged"
+                checked={payer === "not_charged"}
+                onChange={(v) => setPayers({ ...payers, [billType]: v })}
+              >
+                {PAYER_LABELS.not_charged}
+              </Radio>
             </div>
 
             {payer === "tenant" && (
@@ -111,6 +120,13 @@ export function BillTermsFields({
                   {COLLECTION_LABELS.direct}
                 </Radio>
               </div>
+            )}
+
+            {payer === "not_charged" && (
+              <p className="mt-2 text-xs text-neutral-500">
+                Тази сметка не се води за имота. Не влиза в справката на наемателя, а
+                ако все пак пристигне такава фактура, остава за ръчен преглед.
+              </p>
             )}
 
             {error && <p className="mt-2 text-xs text-red-600">{error}</p>}

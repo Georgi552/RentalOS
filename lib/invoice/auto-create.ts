@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   activeLeaseTerms,
   chargeableFromTerm,
+  notChargedFromTerm,
   paidByLandlordFromTerm,
   termKey,
 } from "@/app/(dashboard)/bills/lease-terms-lookup";
@@ -94,6 +95,20 @@ export async function autoCreateBill(
   // the form.
   const terms = await activeLeaseTerms(supabase, organizationId);
   const term = terms[termKey(match.propertyId, invoice.billType)];
+
+  // The lease says this property has no such bill - no district heating, no
+  // building fee. One arriving anyway means either the term is wrong or the
+  // property was matched wrongly, and both need a person. Checked after the
+  // duplicate look-up on purpose: an invoice already filed has been seen once
+  // already, and saying "already entered" is more useful than flagging it again.
+  if (notChargedFromTerm(term)) {
+    await setStatus(supabase, organizationId, documentId, "needs_review");
+    return {
+      outcome: "review",
+      reason:
+        "По договора тази сметка не се начислява за имота, а фактурата е от този вид.",
+    };
+  }
 
   const { data, error } = await supabase
     .from("bills")
