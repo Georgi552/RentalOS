@@ -58,9 +58,9 @@ to confirm. Every migration from 0010 on records its own version.
 Properties · tenants · leases with per-bill-type terms · rent payments ·
 expenses · documents in private Storage · bills · PDF reading for Електрохолд,
 Софийска вода and Топлофикация София · deterministic property matching ·
-per-property dashboard · tenant statements by hand or on a schedule · CSV and
-print export · password recovery · invoices by forwarded email · Bulgarian
-throughout.
+per-property dashboard · tenant statements by hand or on a schedule · a tenant
+portal with its own login · CSV and print export · password recovery · invoices
+by forwarded email · Bulgarian throughout.
 
 `DECISIONS.md` explains the rules behind the numbers. `FUTURE.md` lists what
 was deliberately left out.
@@ -181,9 +181,16 @@ it on before real users.
 money rules. Server actions, forms and the invoice parsers are verified by
 running them against the real project during development, not in CI.
 
+**The tenant portal has not been exercised by a real tenant yet.** The policies
+are covered by `npm test`, and the pages compile, but nobody has logged in as a
+tenant against the live project. Migration 0024 has to be applied first.
+
 ## Things that will bite
 
 - **Money**: read `DECISIONS.md` first. Every rule there was a bug.
+- **A tenant can read `bills.notes`.** The portal shows every invoice filed
+  against their property, by choice, and RLS cannot hide a column. That field is
+  no longer a private place to write.
 - **Sample invoices** live in `samples/`, gitignored — they carry real personal
   data. The parsers were built against them; without them the parser tests
   cannot run.

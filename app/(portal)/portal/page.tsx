@@ -1,45 +1,41 @@
-import Link from "next/link";
 import {
   LeaseLedgerCard,
   groupByLease,
   type LedgerCardRow,
 } from "@/components/lease-ledger-card";
-import { requireOrganization } from "@/lib/auth";
+import { requireTenant } from "@/lib/auth";
 import { LEDGER_SELECT, MONTHS_SHOWN, firstOfMonthsAgo } from "@/lib/ledger";
 
-export default async function DashboardPage() {
-  const { supabase, organizationId } = await requireOrganization();
+// The same months, the same columns and the same card the landlord sees on their
+// dashboard. Row level security has already narrowed the view to this tenant's
+// lease (migration 0024); the filters below only keep the query from fetching
+// more than the page draws.
+export default async function PortalPage() {
+  const { supabase, tenantId, tenantName } = await requireTenant();
 
   const { data, error } = await supabase
     .from("lease_monthly_ledger")
     .select(LEDGER_SELECT)
-    .eq("organization_id", organizationId)
+    .eq("tenant_id", tenantId)
     .gte("month", firstOfMonthsAgo())
     .order("month");
 
-  if (error) throw new Error(`Не мога да заредя таблото: ${error.message}`);
+  if (error) throw new Error(`Не мога да заредя справката: ${error.message}`);
 
   const cards = groupByLease((data ?? []) as unknown as LedgerCardRow[]);
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Табло</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Справка</h1>
       <p className="mt-1 text-sm text-neutral-500">
-        Последните {MONTHS_SHOWN} месеца по имот.
+        {tenantName} · последните {MONTHS_SHOWN} месеца.
       </p>
 
       {cards.length === 0 ? (
         <div className="mt-8 rounded-lg border border-dashed border-neutral-300 px-6 py-12 text-center">
           <p className="text-sm text-neutral-500">
-            Още няма данни. Създай{" "}
-            <Link href="/properties/new" className="underline">
-              имот
-            </Link>{" "}
-            и активен{" "}
-            <Link href="/leases/new" className="underline">
-              договор
-            </Link>
-            .
+            Още няма начисления за този период. Щом наемодателят въведе наем или
+            сметка, тук ще се появи справка.
           </p>
         </div>
       ) : (
@@ -48,7 +44,7 @@ export default async function DashboardPage() {
             <LeaseLedgerCard
               key={months[months.length - 1].lease_id}
               months={months}
-              audience="landlord"
+              audience="tenant"
             />
           ))}
         </div>

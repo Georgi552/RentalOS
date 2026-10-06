@@ -7,6 +7,7 @@ import { balanceNote, balanceTone, monthLabel } from "@/lib/ledger";
 import { formatMoney } from "@/lib/money";
 import { tenantName, type Tenant } from "@/lib/types";
 import { deleteTenant } from "../actions";
+import { TenantAccess } from "../tenant-access";
 
 type LeaseRow = {
   id: string;
@@ -138,6 +139,13 @@ export default async function TenantPage({
           </ul>
         </>
       )}
+
+      <TenantAccess
+        tenantId={tenant.id}
+        tenantName={tenantName(tenant)}
+        email={tenant.email}
+        hasAccount={Boolean(tenant.user_id)}
+      />
 
       <h2 className="mt-8 text-lg font-semibold tracking-tight">Договори</h2>
       {leases.length === 0 ? (

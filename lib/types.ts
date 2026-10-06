@@ -19,6 +19,9 @@ export type Tenant = {
   email: string | null;
   phone: string | null;
   notes: string | null;
+  // The tenant's portal account, set when the landlord creates one and cleared
+  // when they stop the access (migration 0024). Null is the normal state.
+  user_id: string | null;
   created_at: string;
   updated_at: string;
 };

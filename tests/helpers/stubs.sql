@@ -10,10 +10,15 @@ create role anon;
 
 create schema if not exists auth;
 
+-- raw_app_meta_data is writable only by the service role in the real thing.
+-- The signup trigger reads account_type out of it to tell a tenant account from
+-- a landlord's, so the column has to exist here or the trigger fails on a
+-- missing field rather than on the rule being tested.
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
   email text,
-  raw_user_meta_data jsonb default '{}'::jsonb
+  raw_user_meta_data jsonb default '{}'::jsonb,
+  raw_app_meta_data jsonb default '{}'::jsonb
 );
 
 -- Whoever the test is currently acting as.

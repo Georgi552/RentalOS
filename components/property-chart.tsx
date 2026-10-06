@@ -503,12 +503,15 @@ function BreakdownTable({ months }: { months: ChartMonth[] }) {
   return <MonthTable months={months} columns={COMBINED_COLUMNS} />;
 }
 
+// exportHref is passed in rather than built from a property id: the CSV route
+// is a landlord route, and the tenant portal renders this same table with
+// nothing to link to.
 export function PropertyChartTable({
   months,
-  propertyId,
+  exportHref,
 }: {
   months: ChartMonth[];
-  propertyId: string;
+  exportHref?: string | null;
 }) {
   if (months.length === 0) return null;
 
@@ -521,12 +524,11 @@ export function PropertyChartTable({
         <div className="mt-2">
           <BreakdownTable months={months} />
           <p className="mt-2 flex items-center gap-4 text-xs">
-            <a
-              href={`/properties/${propertyId}/export?table=breakdown`}
-              className="font-medium text-neutral-900 hover:underline"
-            >
-              Свали CSV
-            </a>
+            {exportHref && (
+              <a href={exportHref} className="font-medium text-neutral-900 hover:underline">
+                Свали CSV
+              </a>
+            )}
             <PrintButton label="PDF" />
           </p>
         </div>

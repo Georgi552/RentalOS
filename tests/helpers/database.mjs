@@ -66,3 +66,18 @@ export async function createLandlord(db, email) {
   ).rows[0].id;
   return { id, organizationId };
 }
+
+// Creates a tenant account and attaches it to an existing tenants row, the way
+// createTenantAccount() does in the app: the account carries account_type in
+// app metadata so the signup trigger leaves it without an organization.
+export async function createTenantUser(db, email, tenantId) {
+  const id = crypto.randomUUID();
+  await db.exec(
+    `insert into auth.users (id, email, raw_app_meta_data)
+     values ('${id}', '${email}', '{"account_type": "tenant"}'::jsonb);`,
+  );
+  await db.exec(
+    `update public.tenants set user_id = '${id}' where id = '${tenantId}';`,
+  );
+  return { id };
+}

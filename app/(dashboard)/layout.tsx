@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { signOut } from "../(auth)/actions";
-import { requireUser } from "@/lib/auth";
+import { requireOrganization } from "@/lib/auth";
 
 const navItems = [
   { href: "/dashboard", label: "Табло" },
@@ -14,12 +14,19 @@ const navItems = [
   { href: "/settings", label: "Настройки" },
 ];
 
+// requireOrganization() rather than requireUser(), so that every page in this
+// group is landlord-only without each one having to remember. A tenant is sent
+// to /portal from here. The two pages that are only a form - properties/new and
+// tenants/new - read nothing and so had no guard of their own.
+//
+// Route handlers do not render layouts, which is what lets
+// /documents/[id]/download serve both audiences.
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = await requireUser();
+  const { user } = await requireOrganization();
 
   return (
     <div className="flex min-h-full flex-1 flex-col">

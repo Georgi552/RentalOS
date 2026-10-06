@@ -12,6 +12,9 @@ milestone. Nothing here gets built until the MVP workflow works end to end.
   are expense categories (context doc section 21).
 - Multi-user organizations. The schema supports members and roles, but there
   is no invite flow, and `organization_members` is read-only from the client.
+  A tenant account is not an exception to this: it belongs to no organization at
+  all, and what it can read is decided by the lease rather than by membership
+  (migration 0024).
 - Currency conversion. `EUR` and `BGN` are both allowed, but a statement is
   pinned to one currency by foreign key. No FX rates.
 
