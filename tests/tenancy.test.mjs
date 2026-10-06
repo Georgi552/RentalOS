@@ -231,6 +231,42 @@ export async function run() {
     1,
   );
 
+  // The flag is read from either place. user_metadata is where GoTrue actually
+  // puts it at insert time and is therefore what the app sets; app_metadata is
+  // kept as a second carrier so a change in that behaviour cannot silently turn
+  // tenants back into landlords (migration 0025).
+  const appMetaOnly = crypto.randomUUID();
+  await db.exec(
+    `insert into auth.users (id, email, raw_app_meta_data)
+     values ('${appMetaOnly}', 'app-meta@example.com', '{"account_type": "tenant"}'::jsonb)`,
+  );
+  equals(
+    "account_type in app metadata also means no organization",
+    (
+      await db.query(
+        `select count(*)::int as n from public.organization_members where user_id = '${appMetaOnly}'`,
+      )
+    ).rows[0].n,
+    0,
+  );
+
+  // The other direction matters just as much: a landlord signing up must still
+  // get an organization, and this is the trigger that was rewritten twice.
+  const plain = crypto.randomUUID();
+  await db.exec(
+    `insert into auth.users (id, email) values ('${plain}', 'plain@example.com')`,
+  );
+  equals(
+    "an account with no account_type is still a landlord",
+    (
+      await db.query(
+        `select count(*)::int as n from public.organization_members
+         where user_id = '${plain}' and role = 'owner'`,
+      )
+    ).rows[0].n,
+    1,
+  );
+
   const counts = async (sql) => (await db.query(sql)).rows[0].n;
 
   await asUser(db, ivanUser.id, async () => {

@@ -68,13 +68,22 @@ export async function createLandlord(db, email) {
 }
 
 // Creates a tenant account and attaches it to an existing tenants row, the way
-// createTenantAccount() does in the app: the account carries account_type in
-// app metadata so the signup trigger leaves it without an organization.
+// createTenantAccount() does in the app.
+//
+// account_type goes in raw_user_meta_data because that is where GoTrue puts the
+// caller's user_metadata at insert time. app_metadata is applied in a second
+// statement, after this trigger has already run, so a flag placed there is
+// invisible to it - which is exactly how migration 0024 shipped a tenant account
+// that became a landlord. The harness used to insert raw_app_meta_data directly
+// and so never reproduced the failure; it now writes both, the way the real
+// thing ends up looking, with the user side being the one the trigger reads.
 export async function createTenantUser(db, email, tenantId) {
   const id = crypto.randomUUID();
   await db.exec(
-    `insert into auth.users (id, email, raw_app_meta_data)
-     values ('${id}', '${email}', '{"account_type": "tenant"}'::jsonb);`,
+    `insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data)
+     values ('${id}', '${email}',
+             '{"account_type": "tenant"}'::jsonb,
+             '{"provider": "email"}'::jsonb);`,
   );
   await db.exec(
     `update public.tenants set user_id = '${id}' where id = '${tenantId}';`,

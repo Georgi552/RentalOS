@@ -188,6 +188,11 @@ tenant against the live project. Migration 0024 has to be applied first.
 ## Things that will bite
 
 - **Money**: read `DECISIONS.md` first. Every rule there was a bug.
+- **`app_metadata` is not visible to a trigger on `auth.users`.** GoTrue's admin
+  `createUser` inserts the row first and applies app metadata afterwards, so an
+  `AFTER INSERT` trigger sees only `{"provider":"email"}` there.
+  `user_metadata` *is* part of the insert. Migration 0025 exists because of this;
+  the first tenant account created in production became a landlord.
 - **A tenant can read `bills.notes`.** The portal shows every invoice filed
   against their property, by choice, and RLS cannot hide a column. That field is
   no longer a private place to write.

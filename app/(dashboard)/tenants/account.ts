@@ -15,8 +15,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export type AccountState = {
   error?: string;
-  // Shown once and never stored. There is no second chance to read it: if it is
-  // lost, the account is revoked and created again.
+  // Shown once and never stored. A lost password is replaced by a new temporary
+  // one rather than read again - resetTenantPassword below.
   password?: string;
 };
 
@@ -65,11 +65,18 @@ export async function createTenantAccount(
     // the landlord rather than by a stranger, so there is nothing to verify.
     email_confirm: true,
     // account_type keeps the signup trigger from handing this account an
-    // organization of its own (migration 0024). must_change_password is what
-    // the portal checks before showing anything. Both are app metadata, which
-    // the tenant cannot rewrite.
+    // organization of its own. It goes in user_metadata because that is what the
+    // trigger can see: GoTrue inserts the auth.users row first and applies
+    // app_metadata afterwards, so an AFTER INSERT trigger reads nothing from it
+    // (migration 0025 - the first account created this way became a landlord).
+    //
+    // must_change_password stays in app_metadata, which the tenant cannot
+    // rewrite. It is only read later, so the ordering does not touch it.
     app_metadata: { account_type: "tenant", must_change_password: true },
-    user_metadata: { full_name: `${tenant.first_name} ${tenant.last_name}` },
+    user_metadata: {
+      account_type: "tenant",
+      full_name: `${tenant.first_name} ${tenant.last_name}`,
+    },
   });
 
   if (createError || !created.user) {
@@ -95,6 +102,48 @@ export async function createTenantAccount(
   if (linkError) {
     await admin.auth.admin.deleteUser(created.user.id);
     return { error: `Не мога да свържа акаунта: ${linkError.message}` };
+  }
+
+  revalidatePath(`/tenants/${tenantId}`);
+  return { password };
+}
+
+// A new temporary password for an account that already exists. Needed because
+// the password is shown once: a tenant who loses it before their first login
+// would otherwise have to have their account deleted and rebuilt.
+//
+// The account is left alone - same id, same email, same link to the tenants row.
+// Only the password changes, and must_change_password goes back on, so whoever
+// receives it still has to replace it.
+export async function resetTenantPassword(
+  _state: AccountState,
+  formData: FormData,
+): Promise<AccountState> {
+  const tenantId = String(formData.get("tenant_id") ?? "");
+  const { supabase, organizationId } = await requireOrganization();
+
+  const { data: tenant, error } = await supabase
+    .from("tenants")
+    .select("user_id")
+    .eq("id", tenantId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (error) return { error: `Не мога да заредя наемателя: ${error.message}` };
+  if (!tenant?.user_id) return { error: "Този наемател няма акаунт." };
+
+  const password = temporaryPassword();
+
+  const { error: updateError } = await createAdminClient().auth.admin.updateUserById(
+    tenant.user_id,
+    {
+      password,
+      app_metadata: { account_type: "tenant", must_change_password: true },
+    },
+  );
+
+  if (updateError) {
+    return { error: `Не мога да сменя паролата: ${updateError.message}` };
   }
 
   revalidatePath(`/tenants/${tenantId}`);

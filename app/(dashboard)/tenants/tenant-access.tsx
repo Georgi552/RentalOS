@@ -5,6 +5,7 @@ import { FormError } from "@/components/form";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import {
   createTenantAccount,
+  resetTenantPassword,
   revokeTenantAccount,
   type AccountState,
 } from "./account";
@@ -23,8 +24,11 @@ export function TenantAccess({
   email: string | null;
   hasAccount: boolean;
 }) {
+  // One piece of state for both actions, because both answer the same way - a
+  // password to pass on, or an error - and only one of them is reachable at a
+  // time. Which one is live follows hasAccount.
   const [state, formAction, pending] = useActionState<AccountState, FormData>(
-    createTenantAccount,
+    hasAccount ? resetTenantPassword : createTenantAccount,
     {},
   );
 
@@ -32,13 +36,49 @@ export function TenantAccess({
     <section className="mt-8">
       <h2 className="text-lg font-semibold tracking-tight">Достъп на наемателя</h2>
 
-      {hasAccount ? (
+      {/* The password is checked before hasAccount, not after. Creating the
+          account revalidates this page, so by the time the result is rendered
+          hasAccount is already true - and a "has an account" branch taken first
+          would swallow the one thing the landlord has to read. */}
+      {state.password ? (
         <div className="mt-3 rounded-lg border border-neutral-200 px-4 py-3">
+          <p className="text-sm">Дай на наемателя тези две неща:</p>
+          <dl className="mt-3 space-y-2 text-sm">
+            <div className="flex gap-3">
+              <dt className="w-20 shrink-0 text-neutral-500">Имейл</dt>
+              <dd className="font-medium">{email}</dd>
+            </div>
+            <div className="flex gap-3">
+              <dt className="w-20 shrink-0 text-neutral-500">Парола</dt>
+              <dd className="font-mono text-base font-medium">{state.password}</dd>
+            </div>
+          </dl>
+          {/* Nothing stores it, so there is no second chance to read it. */}
+          <p className="mt-3 text-xs text-neutral-500">
+            Паролата се показва само сега и никъде не се пази. При първото влизане
+            наемателят я сменя сам. Ако се загуби, поискай нова оттук.
+          </p>
+        </div>
+      ) : hasAccount ? (
+        <div className="mt-3 rounded-lg border border-neutral-200 px-4 py-3">
+          <FormError message={state.error} />
+
           <p className="text-sm">
             Има акаунт с <span className="font-medium">{email}</span> и вижда своята
             справка и фактурите за имота си.
           </p>
-          <div className="mt-3">
+
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <form action={formAction}>
+              <input type="hidden" name="tenant_id" value={tenantId} />
+              <button
+                type="submit"
+                disabled={pending}
+                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {pending ? "Сменям…" : "Нова временна парола"}
+              </button>
+            </form>
             <ConfirmDeleteButton
               action={revokeTenantAccount.bind(null, tenantId)}
               confirmMessage={`Да спра ли достъпа на ${tenantName}? Акаунтът се изтрива и повече няма да може да влезе.`}
@@ -55,45 +95,20 @@ export function TenantAccess({
         <div className="mt-3 rounded-lg border border-neutral-200 px-4 py-3">
           <FormError message={state.error} />
 
-          {state.password ? (
-            <div>
-              <p className="text-sm">
-                Акаунтът е създаден. Дай на наемателя тези две неща:
-              </p>
-              <dl className="mt-3 space-y-2 text-sm">
-                <div className="flex gap-3">
-                  <dt className="w-20 shrink-0 text-neutral-500">Имейл</dt>
-                  <dd className="font-medium">{email}</dd>
-                </div>
-                <div className="flex gap-3">
-                  <dt className="w-20 shrink-0 text-neutral-500">Парола</dt>
-                  <dd className="font-mono text-base font-medium">{state.password}</dd>
-                </div>
-              </dl>
-              {/* Nothing stores it, so there is no second chance to read it. */}
-              <p className="mt-3 text-xs text-neutral-500">
-                Паролата се показва само сега и никъде не се пази. При първото
-                влизане наемателят я сменя сам. Ако се загуби, спри достъпа и
-                създай акаунта наново.
-              </p>
-            </div>
-          ) : (
-            <form action={formAction}>
-              <input type="hidden" name="tenant_id" value={tenantId} />
-              <p className="text-sm text-neutral-500">
-                Ще създам акаунт за <span className="font-medium">{email}</span> и
-                ще покажа временна парола, която наемателят сменя при първото
-                влизане.
-              </p>
-              <button
-                type="submit"
-                disabled={pending}
-                className="mt-3 rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-              >
-                {pending ? "Създавам…" : "Създай акаунт"}
-              </button>
-            </form>
-          )}
+          <form action={formAction}>
+            <input type="hidden" name="tenant_id" value={tenantId} />
+            <p className="text-sm text-neutral-500">
+              Ще създам акаунт за <span className="font-medium">{email}</span> и ще
+              покажа временна парола, която наемателят сменя при първото влизане.
+            </p>
+            <button
+              type="submit"
+              disabled={pending}
+              className="mt-3 rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {pending ? "Създавам…" : "Създай акаунт"}
+            </button>
+          </form>
         </div>
       )}
     </section>
