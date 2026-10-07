@@ -483,6 +483,60 @@ export async function run() {
     );
   });
 
+  section("a bill fills in the document's property");
+  // The gap the tenant portal exposed: the upload form allows "I do not know
+  // yet", the bill learns the property and the document never did. Readers that
+  // went through bills never noticed (migration 0026).
+  await asUser(db, ana.id, async () => {
+    const unfiled = crypto.randomUUID();
+    await db.exec(`insert into public.documents (id, organization_id, storage_path, filename)
+      values ('${unfiled}', '${ana.organizationId}',
+              '${ana.organizationId}/${unfiled}/tok.pdf', 'tok.pdf')`);
+    await db.exec(`insert into public.bills
+      (organization_id, property_id, document_id, bill_type, amount, status)
+      values ('${ana.organizationId}', '${flat}', '${unfiled}', 'internet', 5.00, 'confirmed')`);
+
+    equals(
+      "filing a bill tells the document its property",
+      (
+        await db.query(
+          `select property_id as id from public.documents where id = '${unfiled}'`,
+        )
+      ).rows[0].id,
+      flat,
+    );
+
+    // The document is what a person looked at; the bill's property is read out of
+    // its text. The person wins.
+    const alreadyFiled = crypto.randomUUID();
+    await db.exec(`insert into public.documents (id, organization_id, property_id, storage_path, filename)
+      values ('${alreadyFiled}', '${ana.organizationId}', '${otherFlat}',
+              '${ana.organizationId}/${alreadyFiled}/x.pdf', 'x.pdf')`);
+    await db.exec(`insert into public.bills
+      (organization_id, property_id, document_id, bill_type, amount, status)
+      values ('${ana.organizationId}', '${flat}', '${alreadyFiled}', 'other', 7.00, 'confirmed')`);
+
+    equals(
+      "a property already on the document is not overwritten",
+      (
+        await db.query(
+          `select property_id as id from public.documents where id = '${alreadyFiled}'`,
+        )
+      ).rows[0].id,
+      otherFlat,
+    );
+  });
+
+  // And the tenant can now reach the document that only the bill knew about.
+  await db.exec(`update public.tenants set user_id = '${ivanUser.id}' where id = '${ivan}'`);
+  await asUser(db, ivanUser.id, async () => {
+    equals(
+      "the tenant sees a document filed only by its bill",
+      await counts("select count(*)::int as n from public.documents"),
+      2,
+    );
+  });
+
   section("views");
   // A view without security_invoker runs as its owner and bypasses RLS. Every
   // view is enumerated rather than listed by hand, so a new one is covered the
