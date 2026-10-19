@@ -4,7 +4,7 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { requireOrganization } from "@/lib/auth";
 import { BILL_STATUS_LABELS, BILL_TYPE_LABELS, label } from "@/lib/labels";
 import { formatMoney } from "@/lib/money";
-import { deleteBill } from "../actions";
+import { deleteBill, stopRecurringBill } from "../actions";
 
 type BillDetail = {
   id: string;
@@ -28,6 +28,7 @@ type BillDetail = {
   notes: string | null;
   property: { id: string; name: string } | null;
   document: { id: string; filename: string } | null;
+  recurring: { id: string; stopped_at: string | null; last_month: string } | null;
 };
 
 type Supabase = Awaited<ReturnType<typeof requireOrganization>>["supabase"];
@@ -70,6 +71,14 @@ async function chargeMonth(
   return data.slice(0, 7);
 }
 
+// "2026-10-01" -> "2026-11". Calendar arithmetic only, no amounts.
+function nextMonth(lastMonth: string) {
+  const [year, month] = lastMonth.slice(0, 7).split("-").map(Number);
+  return month === 12
+    ? `${year + 1}-01`
+    : `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+
 export default async function BillPage({ params, searchParams }: PageProps<"/bills/[id]">) {
   const { id } = await params;
   const { error: actionError, created, duplicate, saved } = await searchParams;
@@ -78,7 +87,7 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
   const { data, error } = await supabase
     .from("bills")
     .select(
-      "id, bill_type, provider, issue_date, charge_month_override, invoice_number, customer_number, period_start, period_end, amount::text, invoice_total::text, currency, due_date, status, tenant_chargeable, paid_by_landlord, extraction_confidence::text, match_reason, notes, property:properties(id, name), document:documents(id, filename)",
+      "id, bill_type, provider, issue_date, charge_month_override, invoice_number, customer_number, period_start, period_end, amount::text, invoice_total::text, currency, due_date, status, tenant_chargeable, paid_by_landlord, extraction_confidence::text, match_reason, notes, property:properties(id, name), document:documents(id, filename), recurring:recurring_bills(id, stopped_at, last_month)",
     )
     .eq("id", id)
     .eq("organization_id", organizationId)
@@ -173,6 +182,32 @@ export default async function BillPage({ params, searchParams }: PageProps<"/bil
           Тази сметка вече беше въведена — това е съществуващият запис. Изтрий го,
           ако искаш да го замениш с новия документ.
         </p>
+      )}
+
+      {bill.recurring && (
+        <div className="mt-4 flex items-center justify-between gap-4 rounded-md border border-neutral-200 px-3 py-2 text-sm">
+          {bill.recurring.stopped_at ? (
+            <span className="text-neutral-500">
+              Повтаряше се всеки месец — спряна на{" "}
+              {bill.recurring.stopped_at.slice(0, 10)}.
+            </span>
+          ) : (
+            <>
+              <span>
+                Повтаря се всеки месец. Следващата се създава на 1-во число на{" "}
+                {nextMonth(bill.recurring.last_month)}.
+              </span>
+              <form action={stopRecurringBill.bind(null, bill.recurring.id, bill.id)}>
+                <button
+                  type="submit"
+                  className="shrink-0 text-sm font-medium text-red-600 hover:underline"
+                >
+                  Спри повтарянето
+                </button>
+              </form>
+            </>
+          )}
+        </div>
       )}
 
       {typeof actionError === "string" && (

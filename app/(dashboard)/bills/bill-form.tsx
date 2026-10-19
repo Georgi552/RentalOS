@@ -46,6 +46,7 @@ export function BillForm({
   terms,
   submitLabel,
   cancelHref,
+  allowRepeat = false,
 }: {
   action: (state: BillFormState, formData: FormData) => Promise<BillFormState>;
   defaults?: Partial<BillDefaults>;
@@ -54,6 +55,7 @@ export function BillForm({
   terms: TermLookup;
   submitLabel: string;
   cancelHref: string;
+  allowRepeat?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
 
@@ -272,6 +274,24 @@ export function BillForm({
       </div>
 
       <TextAreaField label="Бележки" name="notes" defaultValue={value("notes")} />
+
+      {allowRepeat && (
+        <label className="flex items-start gap-3 rounded-md border border-neutral-200 px-3 py-3">
+          <input
+            type="checkbox"
+            name="repeat_monthly"
+            defaultChecked={state.values?.repeat_monthly === "on"}
+            className="mt-0.5"
+          />
+          <span>
+            <span className="block text-sm font-medium">Повтаряй всеки месец</span>
+            <span className="block text-xs text-neutral-500">
+              За фиксирани сметки като входната такса. На 1-во число всеки месец
+              ще се създава същата сметка със същата сума, докато не я спреш.
+            </span>
+          </span>
+        </label>
+      )}
 
       <SubmitRow pending={pending} submitLabel={submitLabel} cancelHref={cancelHref} />
     </form>

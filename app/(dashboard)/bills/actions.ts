@@ -47,6 +47,7 @@ function parse(formData: FormData) {
     tenant_chargeable: formData.get("tenant_chargeable") ? "on" : "",
     paid_by_landlord: formData.get("paid_by_landlord") ? "on" : "",
     notes: text(formData, "notes"),
+    repeat_monthly: formData.get("repeat_monthly") ? "on" : "",
   };
 
   const fieldErrors: Record<string, string> = {};
@@ -172,13 +173,58 @@ export async function createBill(
 
   const { supabase, organizationId } = await requireOrganization();
 
+  // This bill is the first month. The template takes over from the month after
+  // it, or from the month after this one if the bill is dated in the past:
+  // starting earlier would write months that may already have been entered by
+  // hand.
+  let recurringBillId: string | null = null;
+  if (formData.get("repeat_monthly")) {
+    const issueMonth = `${parsed.data.issue_date!.slice(0, 7)}-01`;
+    const thisMonth = `${new Date().toISOString().slice(0, 7)}-01`;
+
+    const { data: template, error: templateError } = await supabase
+      .from("recurring_bills")
+      .insert({
+        organization_id: organizationId,
+        property_id: parsed.data.property_id,
+        bill_type: parsed.data.bill_type,
+        provider: parsed.data.provider,
+        amount: parsed.data.amount,
+        currency: parsed.data.currency,
+        tenant_chargeable: parsed.data.tenant_chargeable,
+        paid_by_landlord: parsed.data.paid_by_landlord,
+        notes: parsed.data.notes,
+        last_month: issueMonth > thisMonth ? issueMonth : thisMonth,
+      })
+      .select("id")
+      .single();
+
+    if (templateError) return { error: templateError.message, values: parsed.values };
+    recurringBillId = template.id;
+  }
+
   const { data, error } = await supabase
     .from("bills")
-    .insert({ ...parsed.data, organization_id: organizationId })
+    .insert({
+      ...parsed.data,
+      organization_id: organizationId,
+      recurring_bill_id: recurringBillId,
+    })
     .select("id")
     .single();
 
-  if (error) return { error: friendlyError(error), values: parsed.values };
+  if (error) {
+    // Without its first bill the template would start next month on its own,
+    // which nobody asked for.
+    if (recurringBillId) {
+      await supabase
+        .from("recurring_bills")
+        .delete()
+        .eq("id", recurringBillId)
+        .eq("organization_id", organizationId);
+    }
+    return { error: friendlyError(error), values: parsed.values };
+  }
 
   revalidatePath("/bills");
   revalidatePath("/properties");
@@ -229,4 +275,21 @@ export async function deleteBill(id: string) {
   revalidatePath("/bills");
   revalidatePath("/properties");
   redirect("/bills");
+}
+
+// Stops future months. Bills already written stay, like any other bill.
+export async function stopRecurringBill(recurringBillId: string, billId: string) {
+  const { supabase, organizationId } = await requireOrganization();
+
+  const { error } = await supabase
+    .from("recurring_bills")
+    .update({ stopped_at: new Date().toISOString() })
+    .eq("id", recurringBillId)
+    .eq("organization_id", organizationId);
+
+  if (error) redirect(`/bills/${billId}?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/bills");
+  revalidatePath(`/bills/${billId}`);
+  redirect(`/bills/${billId}`);
 }

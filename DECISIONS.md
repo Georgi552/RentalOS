@@ -297,3 +297,25 @@ key, which is public anyway.
 
 Every decision — whose invoice this is, whether the sender is trusted, whether a
 bill may be written — stays in the app. The Worker parses MIME and moves bytes.
+
+## A fixed monthly bill is written, not assumed
+
+The building fee has no invoice to read, so it was typed in by hand every month
+until October, when it was not, and the statement went out without it. A bill
+created with "Повтаряй всеки месец" leaves a `recurring_bills` template behind,
+and the daily cron writes a real bill from it on the 1st of every month.
+
+Real rows, not a view that adds the charge on the fly. Every number already
+comes from `bills`, and a second source of charges would be a second place
+deciding what a tenant owes. A generated bill is dated the 1st, has no period
+and no `charge_month_override`, so its month is whatever a hand-entered bill
+with that date would get. It can be corrected or deleted like any other.
+
+The template remembers the last month it wrote (`last_month`), not a start
+date. A generated bill the landlord deletes therefore stays deleted, and a cron
+that missed a day catches up rather than skipping. A template created from a
+bill dated in the past starts after the current month, never before it, because
+earlier months may already have been entered by hand.
+
+Stopping is by hand. A template does not end with the lease, because the fee
+does not either: the landlord pays it between tenants too.

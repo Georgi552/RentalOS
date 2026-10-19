@@ -58,7 +58,8 @@ to confirm. Every migration from 0010 on records its own version.
 Properties · tenants · leases with per-bill-type terms · rent payments ·
 expenses · documents in private Storage · bills · PDF reading for Електрохолд,
 Софийска вода and Топлофикация София · deterministic property matching ·
-per-property dashboard · tenant statements by hand or on a schedule · a tenant
+per-property dashboard · fixed bills that repeat monthly ·
+tenant statements by hand or on a schedule · a tenant
 portal with its own login · CSV and print export · password recovery · invoices
 by forwarded email · Bulgarian throughout.
 

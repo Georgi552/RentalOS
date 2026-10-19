@@ -14,6 +14,7 @@ type BillRow = {
   status: string;
   tenant_chargeable: boolean;
   paid_by_landlord: boolean;
+  recurring_bill_id: string | null;
   property: { name: string } | null;
 };
 
@@ -23,7 +24,7 @@ export default async function BillsPage() {
   const { data, error } = await supabase
     .from("bills")
     .select(
-      "id, bill_type, provider, period_start, period_end, amount::text, currency, status, tenant_chargeable, paid_by_landlord, property:properties(name)",
+      "id, bill_type, provider, period_start, period_end, amount::text, currency, status, tenant_chargeable, paid_by_landlord, recurring_bill_id, property:properties(name)",
     )
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
@@ -69,6 +70,7 @@ export default async function BillsPage() {
                     {bill.provider ?? "Без доставчик"}
                     {bill.period_start ? ` · ${bill.period_start}` : ""}
                     {bill.period_end ? ` – ${bill.period_end}` : ""}
+                    {bill.recurring_bill_id ? " · всеки месец" : ""}
                   </span>
                 </span>
                 <span className="text-right">

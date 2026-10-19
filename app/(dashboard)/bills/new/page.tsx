@@ -146,6 +146,7 @@ export default async function NewBillPage({ searchParams }: PageProps<"/bills/ne
           documents={documents}
           terms={terms}
           submitLabel="Създай сметка"
+          allowRepeat
           cancelHref="/bills"
         />
       )}

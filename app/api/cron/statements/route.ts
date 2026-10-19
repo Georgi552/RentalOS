@@ -20,6 +20,14 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
+
+  // Recurring bills first, so this month's fixed charges exist before any
+  // statement for this month is built. A failure here is reported but does not
+  // stop the statements: a send day missed is a month without a statement.
+  const { data: recurringWritten, error: recurringError } = await admin.rpc(
+    "generate_recurring_bills",
+  );
+
   const today = new Date();
   const dayOfMonth = today.getUTCDate();
   const month = today.toISOString().slice(0, 7);
@@ -82,5 +90,11 @@ export async function GET(request: Request) {
     );
   }
 
-  return Response.json({ month, dayOfMonth, considered: due.length, results });
+  return Response.json({
+    month,
+    dayOfMonth,
+    recurringBills: recurringError ? { error: recurringError.message } : recurringWritten,
+    considered: due.length,
+    results,
+  });
 }
