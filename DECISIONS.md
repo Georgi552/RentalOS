@@ -188,6 +188,14 @@ three different ways, so the address is never enough on its own:
 The first invoice from a provider is assigned by hand. That confirmation is
 what teaches the customer number, and every later one is automatic.
 
+"Customer number" means the number that belongs to the **property**, not the
+person. Софийска вода prints a `КЛИЕНТСКИ НОМЕР` that is the landlord's own, and
+it was identical on the invoices for two different houses, so a Драгалевци
+invoice was written onto Шеовица without anyone being asked. The number that
+follows the property is the `договорна сметка` on page two; Топлофикация's
+equivalent is its `ДОГОВОРНА СМЕТКА`. A provider adapter must store the
+per-property number or nothing.
+
 ## A bill is written without asking only when nothing is in doubt
 
 Uploading a PDF creates the bill by itself only when the invoice was read

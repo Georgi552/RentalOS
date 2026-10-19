@@ -26,7 +26,11 @@ export const sofiyskaVoda: ProviderAdapter = {
       provider: this.name,
       billType: "water",
       invoiceNumber: firstMatch(text, [/ФАКТУРА\s+ОРИГИНАЛ\s*№\s*(\d+)/i]),
-      customerNumber: firstMatch(text, [/КЛИЕНТСКИ\s+НОМЕР\s*:?\s*(\d+)/i]),
+      // The contract account follows the property; the КЛИЕНТСКИ НОМЕР follows
+      // the person, and one person's two properties share it. Matching on it put
+      // a Драгалевци invoice on the Шеовица house. No fallback to it: an invoice
+      // without a contract account goes to a person rather than to a guess.
+      customerNumber: firstMatch(text, [/договорна\s+сметка\s*:?\s*(\d+)/i]),
       issueDate: parseDate(firstMatch(text, [/Дата на издаване\s*([\d/.]+)/])),
       dueDate: parseDate(firstMatch(text, [/Краен срок за плащане\s*([\d/.]+)/])),
       periodStart,
@@ -44,7 +48,12 @@ export const sofiyskaVoda: ProviderAdapter = {
       amountDue: parseAmount(firstMatch(text, [/ОБЩА ДЪЛЖИМА СУМА\s*([\d\s.,-]+)/])),
       providerBalanceNote: oldBalanceNote(text),
       currency: "EUR",
-      serviceAddress: firstMatch(text, [/АДРЕС НА КОНСУМАЦИЯ:\s*([^\n]+)/i]),
+      // The address printed with the contract account, not the first one on the
+      // page, which can be the customer's rather than the property's.
+      serviceAddress: firstMatch(text, [
+        /АДРЕС НА КОНСУМАЦИЯ:\s*([^\n]+)\n\s*договорна\s+сметка/i,
+        /АДРЕС НА КОНСУМАЦИЯ:\s*([^\n]+)/i,
+      ]),
       meterReadings,
     };
   },

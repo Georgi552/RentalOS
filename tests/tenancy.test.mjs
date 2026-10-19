@@ -537,6 +537,56 @@ export async function run() {
     );
   });
 
+  section("a corrected bill takes its document along");
+  // Two houses shared one Софийска вода КЛИЕНТСКИ НОМЕР, an invoice was matched
+  // to the wrong one, and the document inherited the mistake. Moving the bill
+  // has to move the document, or the wrong tenant keeps seeing it (0027).
+  await asUser(db, ana.id, async () => {
+    const documentProperty = async (id) =>
+      (await db.query(`select property_id as id from public.documents where id = '${id}'`))
+        .rows[0].id;
+
+    const misfiled = crypto.randomUUID();
+    const misfiledBill = crypto.randomUUID();
+    await db.exec(`insert into public.documents (id, organization_id, storage_path, filename)
+      values ('${misfiled}', '${ana.organizationId}',
+              '${ana.organizationId}/${misfiled}/voda.pdf', 'voda.pdf')`);
+    await db.exec(`insert into public.bills
+      (id, organization_id, property_id, document_id, bill_type, amount, status)
+      values ('${misfiledBill}', '${ana.organizationId}', '${otherFlat}', '${misfiled}',
+              'water', 5.04, 'confirmed')`);
+    await db.exec(`update public.bills set property_id = '${flat}' where id = '${misfiledBill}'`);
+
+    equals("the document moves with the corrected bill", await documentProperty(misfiled), flat);
+
+    // A document filed by hand against a property other than the one the bill
+    // is leaving is not the bill's to move.
+    const handFiled = crypto.randomUUID();
+    const handFiledBill = crypto.randomUUID();
+    await db.exec(`insert into public.documents (id, organization_id, property_id, storage_path, filename)
+      values ('${handFiled}', '${ana.organizationId}', '${otherFlat}',
+              '${ana.organizationId}/${handFiled}/y.pdf', 'y.pdf')`);
+    await db.exec(`insert into public.bills
+      (id, organization_id, property_id, document_id, bill_type, amount, status)
+      values ('${handFiledBill}', '${ana.organizationId}', '${flat}', '${handFiled}',
+              'other', 3.00, 'confirmed')`);
+    await db.exec(`update public.bills set bill_type = 'internet' where id = '${handFiledBill}'`);
+    equals(
+      "an unrelated edit to the bill leaves the document alone",
+      await documentProperty(handFiled),
+      otherFlat,
+    );
+
+    // Moving the bill from `flat` (where the document is not) to `otherFlat`
+    // (where it already is) changes nothing either.
+    await db.exec(`update public.bills set property_id = '${otherFlat}' where id = '${handFiledBill}'`);
+    equals(
+      "a document on a different property than the bill's old one stays put",
+      await documentProperty(handFiled),
+      otherFlat,
+    );
+  });
+
   section("views");
   // A view without security_invoker runs as its owner and bypasses RLS. Every
   // view is enumerated rather than listed by hand, so a new one is covered the
