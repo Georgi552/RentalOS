@@ -20,7 +20,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="relative">
           <h2 className="text-3xl leading-tight font-bold tracking-tight">
-            Сметките на наемите ти,
+            Сметките и наемите ти,
             <br />
             <span className="text-brand-300">подредени всеки месец.</span>
           </h2>
