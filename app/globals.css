@@ -1,51 +1,86 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f8f6;
+  --foreground: #10241e;
   --surface: #ffffff;
-  --surface-muted: #f5f5f5;
-  --surface-subtle: #fafafa;
-  --border: #e5e5e5;
-  --border-strong: #d4d4d4;
-  --muted: #737373;
-  --muted-strong: #525252;
-  --link: #171717;
-  --button-primary: #171717;
-  --button-primary-hover: #404040;
+  --surface-muted: #eef3f0;
+  --surface-subtle: #f7faf8;
+  --border: #dde6e1;
+  --border-strong: #c4d1ca;
+  --muted: #5f7169;
+  --muted-strong: #44564e;
+  --link: #0e3a30;
+  --button-primary: #0e3a30;
+  --button-primary-hover: #2a6b5a;
   --button-primary-fg: #ffffff;
-  --chart-grid: #e1e0d9;
-  --chart-grid-strong: #c3c2b7;
-  --chart-label: #52514e;
-  --chart-label-muted: #898781;
+  --chart-grid: #dfe7e2;
+  --chart-grid-strong: #c4d1ca;
+  --chart-label: #44564e;
+  --chart-label-muted: #7d8f87;
+  --sidebar: #0b3129;
+  --sidebar-fg: #d6eae0;
+  --focus-ring: rgb(53 137 108 / 0.25);
 }
 
+/*
+ * Brand palette, sampled from the logo. The app's markup is written against
+ * Tailwind's neutral scale, so that scale is redefined here as green-tinted
+ * greys ending in the logo's dark green: every existing bg-neutral-900 button
+ * and border-neutral-200 card takes on the brand without touching its page.
+ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
+
+  --color-brand-50: #eef6f2;
+  --color-brand-100: #d6eae0;
+  --color-brand-200: #b3d6c5;
+  --color-brand-300: #76ab93;
+  --color-brand-400: #4f9479;
+  --color-brand-500: #35896c;
+  --color-brand-600: #2a6b5a;
+  --color-brand-700: #1f5446;
+  --color-brand-800: #164236;
+  --color-brand-900: #0e3a30;
+  --color-brand-950: #072820;
+
+  --color-neutral-50: #f4f7f5;
+  --color-neutral-100: #e8eeeb;
+  --color-neutral-200: #dde6e1;
+  --color-neutral-300: #c4d1ca;
+  --color-neutral-400: #8fa39a;
+  --color-neutral-500: #5f7169;
+  --color-neutral-600: #4a5c55;
+  --color-neutral-700: #2a6b5a;
+  --color-neutral-800: #164236;
+  --color-neutral-900: #0e3a30;
+  --color-neutral-950: #072820;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #111111;
-    --foreground: #ededed;
-    --surface: #181818;
-    --surface-muted: #242424;
-    --surface-subtle: #202020;
-    --border: #3a3a3a;
-    --border-strong: #525252;
-    --muted: #b8b8b8;
-    --muted-strong: #d4d4d4;
-    --link: #fafafa;
-    --button-primary: #f5f5f5;
-    --button-primary-hover: #d4d4d4;
-    --button-primary-fg: #171717;
-    --chart-grid: #3f3f3f;
-    --chart-grid-strong: #5a5a5a;
-    --chart-label: #d4d4d4;
-    --chart-label-muted: #a3a3a3;
+    --background: #0a1613;
+    --foreground: #e6efeb;
+    --surface: #10201b;
+    --surface-muted: #172a24;
+    --surface-subtle: #13241f;
+    --border: #23372f;
+    --border-strong: #33493f;
+    --muted: #9db2a9;
+    --muted-strong: #c9d8d1;
+    --link: #b3d6c5;
+    --button-primary: #76ab93;
+    --button-primary-hover: #8fc0a8;
+    --button-primary-fg: #072820;
+    --chart-grid: #23372f;
+    --chart-grid-strong: #33493f;
+    --chart-label: #c9d8d1;
+    --chart-label-muted: #8fa39a;
+    --sidebar: #061e18;
+    --sidebar-fg: #c9d8d1;
   }
 }
 
@@ -57,6 +92,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  /* lang="bg" switches Manrope to its Bulgarian letterforms (т drawn as m,
+     д as g), which read as handwriting in an interface. Keep the standard ones. */
+  font-feature-settings: "locl" 0;
 }
 
 * {
@@ -87,6 +125,27 @@ textarea::placeholder {
   color: var(--muted);
 }
 
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+a,
+button {
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+/* Cards sit on a tinted page, so they need a surface of their own. Dashed
+   boxes are empty-state placeholders and stay transparent. */
+.rounded-lg.border:not(.border-dashed) {
+  background-color: var(--surface);
+  box-shadow: 0 1px 2px rgb(14 58 48 / 0.05);
+}
+
 input::file-selector-button {
   background: var(--button-primary);
   color: var(--button-primary-fg);
@@ -98,7 +157,7 @@ input::file-selector-button {
   }
 
   .text-neutral-400 {
-    color: #a3a3a3;
+    color: #8fa39a;
   }
 
   .text-neutral-500 {

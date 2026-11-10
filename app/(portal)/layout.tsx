@@ -1,10 +1,12 @@
-import Link from "next/link";
 import { signOut } from "../(auth)/actions";
+import { Logo } from "@/components/brand";
+import { Icon } from "@/components/icons";
+import { TabNav, type NavItem } from "@/components/nav";
 import { requireUser } from "@/lib/auth";
 
-const navItems = [
-  { href: "/portal", label: "Справка" },
-  { href: "/portal/invoices", label: "Фактури" },
+const navItems: NavItem[] = [
+  { href: "/portal", label: "Справка", icon: "statement" },
+  { href: "/portal/invoices", label: "Фактури", icon: "bills" },
 ];
 
 // The tenant's shell. requireUser() and nothing more: the two gates that decide
@@ -20,32 +22,27 @@ export default async function PortalLayout({
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="no-print border-b border-neutral-200">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div className="min-w-0 lg:flex lg:items-center lg:gap-6">
-            <Link href="/portal" className="font-semibold tracking-tight">
-              RentalOS
-            </Link>
-            <nav className="-mx-4 mt-3 flex gap-4 overflow-x-auto px-4 pb-1 text-sm sm:mx-0 sm:px-0 sm:pb-0 lg:mt-0">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="shrink-0 whitespace-nowrap text-neutral-500 hover:text-neutral-900"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-
-          <div className="flex min-w-0 items-center gap-4">
-            <span className="min-w-0 truncate text-sm text-neutral-500">{user.email}</span>
-            <form action={signOut}>
-              <button type="submit" className="text-sm font-medium text-neutral-900 underline">
+      <header className="no-print bg-[var(--sidebar)]">
+        <div className="mx-auto w-full max-w-3xl px-4 pt-3 pb-2 sm:px-6 lg:px-8">
+          {/* ml-auto rather than justify-between: globals.css stacks every
+              .flex.items-center.justify-between into a column on phones. */}
+          <div className="flex items-center gap-4">
+            <Logo href="/portal" tone="dark" size={24} />
+            <span className="ml-auto hidden min-w-0 truncate text-sm text-[var(--sidebar-fg)] opacity-80 sm:inline">
+              {user.email}
+            </span>
+            <form action={signOut} className="ml-auto sm:ml-0">
+              <button
+                type="submit"
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-[var(--sidebar-fg)] hover:bg-white/10 hover:text-white"
+              >
+                <Icon name="logout" className="h-4 w-4" />
                 Изход
               </button>
             </form>
+          </div>
+          <div className="mt-3">
+            <TabNav items={navItems} exactRoot="/portal" />
           </div>
         </div>
       </header>

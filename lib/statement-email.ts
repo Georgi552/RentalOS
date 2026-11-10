@@ -18,11 +18,11 @@ export function statementSubject(statement: Statement) {
 export function statementHtml(statement: Statement) {
   const row = (name: string, detail: string | null, amount: string, bold = false) => `
     <tr>
-      <td style="padding:6px 0;border-bottom:1px solid #e1e0d9;${bold ? "font-weight:600;" : ""}">
+      <td style="padding:6px 0;border-bottom:1px solid #dde6e1;${bold ? "font-weight:600;" : ""}">
         ${escapeHtml(name)}
-        ${detail ? `<div style="color:#898781;font-size:12px">${escapeHtml(detail)}</div>` : ""}
+        ${detail ? `<div style="color:#7d8f87;font-size:12px">${escapeHtml(detail)}</div>` : ""}
       </td>
-      <td style="padding:6px 0;border-bottom:1px solid #e1e0d9;text-align:right;white-space:nowrap;${bold ? "font-weight:600;" : ""}">
+      <td style="padding:6px 0;border-bottom:1px solid #dde6e1;text-align:right;white-space:nowrap;${bold ? "font-weight:600;" : ""}">
         ${escapeHtml(formatMoney(amount, statement.currency))}
       </td>
     </tr>`;
@@ -42,17 +42,20 @@ export function statementHtml(statement: Statement) {
         );
 
   return `<!doctype html>
-<html lang="bg"><body style="margin:0;background:#f9f9f7;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#0b0b0b">
+<html lang="bg"><body style="margin:0;background:#f5f8f6;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#10241e">
   <div style="max-width:560px;margin:0 auto;padding:24px 16px">
-    <div style="background:#ffffff;border:1px solid #e1e0d9;border-radius:8px;padding:24px">
-      <p style="margin:0;color:#52514e;font-size:13px">${escapeHtml(statement.organizationName)}</p>
+    <div style="background:#0e3a30;border-radius:12px 12px 0 0;padding:14px 24px;font-weight:800;font-size:15px;letter-spacing:0.06em">
+      <span style="color:#76ab93">TE</span><span style="color:#ffffff">DATA</span><span style="color:#76ab93">ONE</span>
+    </div>
+    <div style="background:#ffffff;border:1px solid #dde6e1;border-top:0;border-radius:0 0 12px 12px;padding:24px">
+      <p style="margin:0;color:#4a5c55;font-size:13px">${escapeHtml(statement.organizationName)}</p>
       <h1 style="margin:4px 0 0;font-size:20px">Справка за ${escapeHtml(statement.month)}</h1>
-      <p style="margin:6px 0 0;color:#52514e;font-size:14px">
+      <p style="margin:6px 0 0;color:#4a5c55;font-size:14px">
         ${escapeHtml(statement.propertyName)}<br>${escapeHtml(statement.propertyAddress)}
       </p>
 
       <p style="margin:20px 0 0;font-size:14px">Здравейте, ${escapeHtml(statement.tenantName)},</p>
-      <p style="margin:6px 0 0;color:#52514e;font-size:14px">
+      <p style="margin:6px 0 0;color:#4a5c55;font-size:14px">
         Това е справката за ${escapeHtml(statement.month)}. Срок за плащане: ${escapeHtml(statement.dueDate)}.
       </p>
 
@@ -76,7 +79,7 @@ export function statementHtml(statement: Statement) {
         }
       </table>
 
-      <p style="margin:22px 0 0;color:#898781;font-size:12px">
+      <p style="margin:22px 0 0;color:#7d8f87;font-size:12px">
         Ако нещо не съответства, отговорете на този имейл.
       </p>
     </div>
@@ -90,8 +93,8 @@ function carriedRow(statement: Statement, balance: string) {
     ? "От предходен месец"
     : "Надплатено от предходен месец";
   return `<tr>
-      <td style="padding:6px 0;border-bottom:1px solid #e1e0d9">${label}</td>
-      <td style="padding:6px 0;border-bottom:1px solid #e1e0d9;text-align:right;white-space:nowrap">
+      <td style="padding:6px 0;border-bottom:1px solid #dde6e1">${label}</td>
+      <td style="padding:6px 0;border-bottom:1px solid #dde6e1;text-align:right;white-space:nowrap">
         ${escapeHtml(formatMoney(balance.replace("-", ""), statement.currency))}
       </td>
     </tr>`;
@@ -100,8 +103,8 @@ function carriedRow(statement: Statement, balance: string) {
 function creditRow(statement: Statement, credit: string) {
   if (credit === "0.00") return "";
   return `<tr>
-      <td style="padding:6px 0;color:#52514e">Оставащ кредит за следващия месец</td>
-      <td style="padding:6px 0;text-align:right;color:#52514e;white-space:nowrap">
+      <td style="padding:6px 0;color:#4a5c55">Оставащ кредит за следващия месец</td>
+      <td style="padding:6px 0;text-align:right;color:#4a5c55;white-space:nowrap">
         ${escapeHtml(formatMoney(credit, statement.currency))}
       </td>
     </tr>`;
@@ -109,8 +112,8 @@ function creditRow(statement: Statement, credit: string) {
 
 function totalRow(statement: Statement, total: string) {
   return `<tr>
-      <td style="padding:10px 0 0;font-weight:600;font-size:16px">За плащане</td>
-      <td style="padding:10px 0 0;text-align:right;font-weight:600;font-size:16px;white-space:nowrap">
+      <td style="padding:10px 0 0;font-weight:700;font-size:16px;color:#0e3a30">За плащане</td>
+      <td style="padding:10px 0 0;text-align:right;font-weight:700;font-size:16px;white-space:nowrap;color:#2a6b5a">
         ${escapeHtml(formatMoney(total, statement.currency))}
       </td>
     </tr>`;
